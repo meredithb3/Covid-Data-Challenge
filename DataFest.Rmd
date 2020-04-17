@@ -9,7 +9,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r load-data}
 covidData <- read.csv("coronacounties.csv")
-
+povertyData <- read.csv("PovertyEstimates.csv")
 ```
 
 This is our Rmd file.
