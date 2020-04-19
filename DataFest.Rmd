@@ -73,3 +73,18 @@ cases_map <- cases_map +
 cases_map
 ```
 
+Need to add histograms for the response variable we choose, the predictors we choose, and plots for the response v. predictors relationships
+
+# Regression
+
+Ideas for regression
+- Linear regression: predict from multiple factors (FIP code, poverty rate, race breakdown, etc.) their number of cases or deaths
+- Logistic regression: predict if factors contribute to a death or not (don't think we have specific data on specific cases so this could be challenging)
+
+Assumptions for regression
+- Independence
+- Linearity
+- Normality
+- Constant Variance
+
+This website has specific graphs that would be helpful to replicate, but don't know where to get the data on an aggregate level: [https://www.apmresearchlab.org/covid/deaths-by-race#black]
