@@ -1,5 +1,7 @@
 ---
 title: "COVID-19 DataFest"
+author: "Meredith Brown, Matt Feder, Pouya Mohammadi"
+date: "`r Sys.Date()`"
 output: html_document
 ---
 
@@ -7,9 +9,67 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Load Datasets
+
+MATT PUT IN DATA INFO HERE (when corona cases stopped tracking, what is pov dataset)
+
 ```{r load-data}
 covidData <- read.csv("coronacounties.csv")
 povertyData <- read.csv("PovertyEstimates.csv")
 ```
 
-This is our Rmd file.
+# Load Packages
+
+```{r load-packages, message=FALSE}
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(usmap)
+```
+
+# Exploratory Data Analysis
+
+First, let's start by glimpsing the 2 datasets.
+
+```{r cov-data}
+glimpse(covidData)
+
+covidData %>%
+  group_by(fips) %>%
+  count()
+```
+
+At first glimpse, the COVID-19 dataset has 61,971 observations and 6 variables. However, after grouping by FIPS code, we see that the dataset contains data on 2,709 counties, with repeated observations representing cases on different dates.
+
+```{r pov-data}
+glimpse(povertyData)
+```
+
+The Poverty dataset has 3,193 observations (counties, states, and the US) and 34 variables.
+
+Both the COVID-19 dataset and the Poverty dataset have a variation of the variable `fips`, which is the Federal Information Processing Standard [https://en.wikipedia.org/wiki/FIPS_county_code] that allows counties to be uniquely identified. 
+
+Thus, the FIPS variable is a good variable by which to join these 2 datasets:
+
+```{r join}
+data <- merge(covidData, povertyData, by.x = 'fips', by.y = 'FIPStxt')
+glimpse(data)
+```
+
+```{r cases-plot, warning=FALSE}
+state_cases <- data %>%
+  filter(date == "2020-04-15") %>%
+  group_by(state) %>%
+  summarise(total_cases = sum(cases))
+
+cases_map <- plot_usmap(data = state_cases, values = "total_cases", labels = TRUE, label_color = "gray", color = "red")
+
+cases_map <- cases_map + 
+              scale_fill_gradient(low = "white", high = "#CB454A", name = "Cases") +
+              labs(title = "Cases by State on April 15, 2020") + 
+              labs(subtitle = "Most cases are concentrated in New York State.") + 
+              theme(legend.position = "right")
+
+cases_map
+```
+
