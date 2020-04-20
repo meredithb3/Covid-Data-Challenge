@@ -16,6 +16,7 @@ library(tidyverse)
 library(dplyr)
 library(ggplot2)
 library(usmap)
+library(ggthemes)
 ```
 
 # Load Datasets
@@ -81,21 +82,47 @@ Need to add histograms for the response variable we choose, the predictors we ch
 county_cases <- data %>%
   filter(date == "2020-04-15")
 
-county_cases <- merge(x = df1, y = df2, by = "CustomerId", all = TRUE)
+county_cases <- merge(x = populationData, y = county_cases, by = "fips", all = TRUE)
 
-county_cases <- county_cases 
+county_cases$log_cases <- log(county_cases$cases)
+county_cases$cases[is.na(county_cases$cases)] <- 0
+county_cases$log_cases[is.na(county_cases$log_cases)] <- 0
 
-county_cases_map <- plot_usmap("counties", data = county_cases, values = "cases", color = "red")
+county_cases_map <- plot_usmap("counties", data = county_cases, values = "cases", color = "red", size=0.01)
 
 county_cases_map <- county_cases_map + 
-              scale_fill_gradient(low = "white", high = "#CB454A", name = "Cases") +
+              scale_fill_gradient(low = "white", high = "#CB454A", name = " Cases") +
               labs(title = "Cases by County on April 15, 2020") + 
+              labs(subtitle = "Most cases are concentrated in New York State.") + 
+              theme(legend.position = "right")
+
+county_cases_map
+
+
+county_cases_map <- plot_usmap("counties", data = county_cases, values = "log_cases", color = "red", size=0.01)
+
+county_cases_map <- county_cases_map + 
+              scale_fill_gradient(low = "white", high = "#CB454A", name = "Log Cases") +
+              labs(title = "Log Cases by County on April 15, 2020") + 
               labs(subtitle = "Most cases are concentrated in New York State.") + 
               theme(legend.position = "right")
 
 county_cases_map
 ```
 
+```{r poverty-plot-county, warning=FALSE}
+plot_poverty_data <- data <- merge(populationData, povertyData, by.x = 'fips', by.y = 'FIPStxt')
+
+county_cases_map <- plot_usmap("counties", data = plot_poverty_data, values = "PCTPOVALL_2018", color = "red", size=0.01)
+
+county_cases_map <- county_cases_map + 
+              scale_fill_gradient(low = "white", high = "#CB454A", name = "PCTPOVALL_2018") +
+              labs(title = "Cases by County on April 15, 2020") + 
+              labs(subtitle = "Most cases are concentrated in New York State.") + 
+              theme(legend.position = "right")
+
+county_cases_map
+```
 
 
 # Regression
