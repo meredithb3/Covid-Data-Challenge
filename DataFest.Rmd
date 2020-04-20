@@ -123,6 +123,28 @@ county_cases_map <- county_cases_map +
 county_cases_map
 ```
 
+We should look at histograms of both cases and log(cases) to see if the apparent more even spread of log(cases) is normal compared to regular cases
+
+```{r cases-hist}
+county_cases %>%
+  ggplot(mapping = aes(x = cases)) +
+  geom_histogram(binwidth = 600) + 
+  labs(title = "Histogram of Number of Cases per County", x = "Number of Cases",
+       y = "# Counties with X Cases")
+```
+
+As we predicted, we see an incredible amount of right skewness in the distribution of cases per county.
+
+```{r logcases-hist}
+county_cases %>%
+  ggplot(mapping = aes(x = log(cases))) +
+  geom_histogram(binwidth = 0.5) + 
+  labs(title = "Histogram of Number of log of # Cases per County", x = "Number of Cases",
+       y = "# Counties with log(X) Cases")
+```
+
+This historam of the log(cases) per county shows much more evidence of normailty than the graph of just cases. It would be a much better response variable, however we should analyze some other options as well.
+
 ### Description of the Response Variable
 
 ### Descriptions of the Regressors
