@@ -4,6 +4,7 @@ library(dplyr)
 library(ggplot2)
 library(usmap)
 library(ggthemes)
+library(shinydashboard)
 
 covidData <- read.csv("coronacounties.csv")
 povertyData <- read.csv("PovertyEstimates.csv")
@@ -34,8 +35,82 @@ county_cases$log_casesPC[is.na(county_cases$log_casesPC)] <- 0
 
 
 # Define UI for application that draws a histogram
-ui <- fluidPage(
-
+ui <- dashboardPage(skin = "purple",
+                
+    dashboardHeader(title = "COVID-19 Analysis"),
+    dashboardSidebar(
+        sidebarMenu(
+            menuItem("Introduction and Purpose", tabName = "intro", icon = icon("home")),
+            menuItem("The Data", tabName = "data", icon = icon("table")),
+            menuItem("Exploring the Data", tabName = "eda", icon = icon("search")),
+            menuItem("Creating Our Model", tabName = "model", icon = icon("user-md")),
+            menuItem("Model Analysis", tabName = "analysis", icon = icon("chart-line")),
+            menuItem("Conclusion", tabName = "conclusion", icon = icon("poll-h"))
+        )
+    ),
+    
+    #body of pages
+    dashboardBody(
+        tabItems(
+            
+            #intro tab contents
+            tabItem(tabName = "intro",
+                    fluidRow(
+                        box(title = "Background Information", status = "primary", solidHeader = TRUE,
+                            
+                            )
+                    )
+            ),
+            
+            #data tab contents
+            tabItem(tabName = "data",
+                    fluidRow(
+                        box(title = "box1", status = "primary", solidHeader = TRUE,
+                            
+                            )
+                    )
+            ),
+            
+            #eda tab contents
+            tabItem(tabName = "eda",
+                    fluidRow(
+                        box(title = "edabox", status = "primary", solidHeader = TRUE,
+                            
+                        )
+                    )
+            ),
+            
+            #model tab contents
+            tabItem(tabName = "model",
+                    fluidRow(
+                        box(title = "box1model", status = "primary", solidHeader = TRUE,
+                            
+                        )
+                    )
+            ),
+            
+            #analysis tab contents
+            tabItem(tabName = "analysis",
+                    fluidRow(
+                        box(title = "box1analysis", status = "primary", solidHeader = TRUE,
+                            
+                        )
+                    )
+            ),
+            
+            #conclusion tab contents
+            tabItem(tabName = "conclusion",
+                    fluidRow(
+                        box(title = "box1conclusion", status = "primary", solidHeader = TRUE,
+                            
+                        )
+                    )
+            )
+            
+        )
+    )
+    
+    
 )
 
 # Define server logic required to draw a histogram
