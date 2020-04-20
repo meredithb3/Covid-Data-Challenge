@@ -145,6 +145,53 @@ county_cases %>%
 
 This historam of the log(cases) per county shows much more evidence of normailty than the graph of just cases. It would be a much better response variable, however we should analyze some other options as well.
 
+Another possible option to analyze as a response would be the number of cases per capita of a county. This may work better as it would correlate significantly less with population as we have "accounted" for this already in the response.
+
+```{r percapita}
+county_cases <- county_cases %>%
+  mutate(casesPC = cases/pop_2015)
+
+casesPC_map <- plot_usmap("counties", data = county_cases, values = "casesPC", color = "red", size=0.01)
+
+casesPC_map <- casesPC_map + 
+              scale_fill_gradient(low = "white", high = "limegreen", name = "Cases Per Capita") +
+              labs(title = "Cases per Capita (by county)") + 
+              theme(legend.position = "right")
+
+casesPC_map
+
+county_cases %>%
+  ggplot(mapping = aes(x = casesPC)) +
+  geom_histogram(binwidth = 0.0001) + 
+  labs(title = "Histogram of Number of  Cases/Capita per County", x = "Number of Cases/Capita",
+       y = "# Counties with X Cases per Capita")
+```
+
+Similarly to the map of cases per county, we see a large discrepancy between counties and may benefit from mapping the log of the cases per capita in order to better normalize the distribution. The histogram confirms this theory as it is majorly right skewed.
+
+```{r logcasesPC}
+county_cases$log_casesPC <- log(county_cases$casesPC)
+county_cases$casesPC[is.na(county_cases$casesPC)] <- 0
+county_cases$log_casesPC[is.na(county_cases$log_casesPC)] <- 0
+
+logcasesPC_map <- plot_usmap("counties", data = county_cases, values = "log_casesPC", color = "red", size=0.01)
+
+logcasesPC_map <- logcasesPC_map + 
+              scale_fill_gradient(low = "white", high = "limegreen", name = "Log of Cases per Capita") +
+              labs(title = "Log of Cases per Capita (by county)") + 
+              theme(legend.position = "right")
+
+logcasesPC_map
+
+county_cases %>%
+  ggplot(mapping = aes(x = log_casesPC)) +
+  geom_histogram(binwidth = 0.3) + 
+  labs(title = "Histogram of Number of log(Cases/Capita per County)", x = "Number of log(Cases/Capita)",
+       y = "# Counties with log(X) Cases per Capita")
+```
+
+We see a much more even distribution using the log of cases per capita. It is important to note that many counties appear as grey in this map; these counties have zero cases and thus the log of them returns the value of negative infinity causing this. We can remove or standardize them in our later analysis. The histogram of the log of cases per capita is very normal which would be perfect for analysis.
+
 ### Description of the Response Variable
 
 ### Descriptions of the Regressors
