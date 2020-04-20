@@ -5,12 +5,7 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 # Load Packages
-
 ```{r load-packages, message=FALSE}
 library(tidyverse)
 library(dplyr)
@@ -18,20 +13,24 @@ library(ggplot2)
 library(usmap)
 library(ggthemes)
 ```
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
-# Load Datasets
-
+# Datasets and Descriptions
 MATT PUT IN DATA INFO HERE (when corona cases stopped tracking, what is pov dataset)
 
-```{r load-data}
+```{r load-data, cache = TRUE}
 covidData <- read.csv("coronacounties.csv")
 povertyData <- read.csv("PovertyEstimates.csv")
 populationData <- usmap::countypop
 populationData$fips <- as.integer(populationData$fips)
 ```
 
-# Exploratory Data Analysis
 
+# Section 1: Introduction
+
+### Exploratory Data Analysis
 First, let's start by glimpsing the 2 datasets.
 
 ```{r cov-data}
@@ -77,6 +76,7 @@ cases_map
 ```
 
 Need to add histograms for the response variable we choose, the predictors we choose, and plots for the response v. predictors relationships
+(We can do this in the section following - response variable description and predictor descriptions)
 
 ```{r cases-plot-county, warning=FALSE}
 county_cases <- data %>%
@@ -117,12 +117,43 @@ county_cases_map <- plot_usmap("counties", data = plot_poverty_data, values = "P
 
 county_cases_map <- county_cases_map + 
               scale_fill_gradient(low = "white", high = "#CB454A", name = "PCTPOVALL_2018") +
-              labs(title = "Cases by County on April 15, 2020") + 
-              labs(subtitle = "Most cases are concentrated in New York State.") + 
+              labs(title = "Poverty Level by County (2018 values)") + 
               theme(legend.position = "right")
 
 county_cases_map
 ```
+
+### Description of the Response Variable
+
+### Descriptions of the Regressors
+
+
+# Section 2: Regression Analysis 
+### Generating Our Model
+
+### Testing Our Assumptions
+
+### Multicollinearity
+
+### Interaction Effects
+
+### Influential Points
+
+### Interpreting The Coefficients
+
+
+# Section 3: Conclusion
+
+### General Commentary
+
+### Discussion of Results
+
+### Limitations and Ideas for Further Research 
+
+
+
+# Exploratory Data Analysis
+
 
 
 # Regression
