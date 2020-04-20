@@ -9,15 +9,6 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Load Datasets
-
-MATT PUT IN DATA INFO HERE (when corona cases stopped tracking, what is pov dataset)
-
-```{r load-data}
-covidData <- read.csv("coronacounties.csv")
-povertyData <- read.csv("PovertyEstimates.csv")
-```
-
 # Load Packages
 
 ```{r load-packages, message=FALSE}
@@ -25,6 +16,17 @@ library(tidyverse)
 library(dplyr)
 library(ggplot2)
 library(usmap)
+```
+
+# Load Datasets
+
+MATT PUT IN DATA INFO HERE (when corona cases stopped tracking, what is pov dataset)
+
+```{r load-data}
+covidData <- read.csv("coronacounties.csv")
+povertyData <- read.csv("PovertyEstimates.csv")
+populationData <- usmap::countypop
+populationData$fips <- as.integer(populationData$fips)
 ```
 
 # Exploratory Data Analysis
@@ -74,6 +76,27 @@ cases_map
 ```
 
 Need to add histograms for the response variable we choose, the predictors we choose, and plots for the response v. predictors relationships
+
+```{r cases-plot-county, warning=FALSE}
+county_cases <- data %>%
+  filter(date == "2020-04-15")
+
+county_cases <- merge(x = df1, y = df2, by = "CustomerId", all = TRUE)
+
+county_cases <- county_cases 
+
+county_cases_map <- plot_usmap("counties", data = county_cases, values = "cases", color = "red")
+
+county_cases_map <- county_cases_map + 
+              scale_fill_gradient(low = "white", high = "#CB454A", name = "Cases") +
+              labs(title = "Cases by County on April 15, 2020") + 
+              labs(subtitle = "Most cases are concentrated in New York State.") + 
+              theme(legend.position = "right")
+
+county_cases_map
+```
+
+
 
 # Regression
 
