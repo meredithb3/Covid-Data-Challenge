@@ -20,18 +20,22 @@ knitr::opts_chunk$set(echo = TRUE)
 # Datasets and Descriptions
 MATT PUT IN DATA INFO HERE (when corona cases stopped tracking, what is pov dataset)
 
+For demographic data, download file called stco-mr2010-1.csv from this url: https://www2.census.gov/programs-surveys/popest/datasets/2010/modified-race-data-2010/.
+The data dictionary is located at https://www2.census.gov/programs-surveys/popest/technical-documentation/file-layouts/2000-2010/mr2010.pdf.
+
 ```{r load-data, cache = TRUE}
 covidData <- read.csv("coronacounties.csv")
 povertyData <- read.csv("PovertyEstimates.csv")
 populationData <- usmap::countypop
 populationData$fips <- as.integer(populationData$fips)
+demoData <- read.csv("stco-mr2010-1.csv")
 ```
 
 
 # Section 1: Introduction
 
 ### Exploratory Data Analysis
-First, let's start by glimpsing the 2 datasets.
+First, let's start by glimpsing all of our datasets.
 
 ```{r cov-data}
 glimpse(covidData)
@@ -49,12 +53,79 @@ glimpse(povertyData)
 
 The Poverty dataset has 3,193 observations (counties, states, and the US) and 34 variables.
 
+```{r demoData-setup}
+glimpse(demoData)
+white_people_by_county <- demoData %>% 
+        filter(IMPRACE == 1, ORIGIN == 1) %>% 
+        group_by(STATE, COUNTY) %>% 
+        summarise(num_white = sum(RESPOP))
+  
+black_people_by_county <- demoData %>% 
+        filter(IMPRACE == 2, ORIGIN == 1) %>% 
+        group_by(STATE, COUNTY) %>% 
+        summarise(num_black = sum(RESPOP))
+
+asian_people_by_county <- demoData %>% 
+        filter(IMPRACE == 4, ORIGIN == 1) %>% 
+        group_by(STATE, COUNTY) %>% 
+        summarise(num_asian = sum(RESPOP))
+  
+hispanic_people_by_county <- demoData %>% 
+        filter(ORIGIN == 2) %>% 
+        group_by(STATE, COUNTY) %>% 
+        summarise(num_hispanic = sum(RESPOP))
+
+other_by_county <- demoData %>% 
+        filter(ORIGIN == 1, !(IMPRACE %in% c(1,2,4))) %>% 
+        group_by(STATE, COUNTY) %>% 
+        summarise(num_other = sum(RESPOP))
+
+non_white_people_by_county <- demoData %>% 
+        filter(IMPRACE !=1 | ORIGIN != 1) %>% 
+        group_by(STATE, COUNTY) %>% 
+        summarise(num_nonwhite = sum(RESPOP))
+
+demographicsData <- full_join(full_join( full_join(white_people_by_county,
+                                black_people_by_county),
+                                full_join(hispanic_people_by_county,
+                                asian_people_by_county)),
+                                full_join(other_by_county,
+                                non_white_people_by_county))
+
+create_fips <- function(ste, cnty){
+  if (cnty < 10){
+    c <- paste("00",as.character(cnty),sep="")
+  }
+  else if (cnty<100){
+    c <- paste("0",as.character(cnty),sep="")
+  }
+  else{
+    c <- as.character(cnty)
+  }
+  
+  if (ste<10){
+    s <- paste("0",as.character(ste),sep="")
+  }
+  else{
+    s <- as.character(ste)
+  }
+  return(paste(s,c,sep="")[1])
+}
+
+demographicsData['fips'] <- mapply(create_fips, demographicsData['STATE'], 
+                                    demographicsData['COUNTY'])
+
+glimpse(demographicsData)
+```
+
+
 Both the COVID-19 dataset and the Poverty dataset have a variation of the variable `fips`, which is the Federal Information Processing Standard [https://en.wikipedia.org/wiki/FIPS_county_code] that allows counties to be uniquely identified. 
 
 Thus, the FIPS variable is a good variable by which to join these 2 datasets:
 
 ```{r join}
 data <- merge(covidData, povertyData, by.x = 'fips', by.y = 'FIPStxt')
+data <- merge(data, populationData, by.x = 'fips', by.y = 'fips')
 glimpse(data)
 ```
 
@@ -62,14 +133,14 @@ glimpse(data)
 state_cases <- data %>%
   filter(date == "2020-04-15") %>%
   group_by(state) %>%
-  summarise(total_cases = sum(cases))
+  summarise(total_deaths = sum(deaths))
 
-cases_map <- plot_usmap(data = state_cases, values = "total_cases", labels = TRUE, label_color = "gray", color = "red")
+cases_map <- plot_usmap(data = state_cases, values = "total_deaths", labels = TRUE, label_color = "gray", color = "red")
 
 cases_map <- cases_map + 
               scale_fill_gradient(low = "white", high = "#CB454A", name = "Cases") +
-              labs(title = "Cases by State on April 15, 2020") + 
-              labs(subtitle = "Most cases are concentrated in New York State.") + 
+              labs(title = "Deaths by State on April 15, 2020") + 
+              labs(subtitle = "Most deaths are concentrated in New York State.") + 
               theme(legend.position = "right")
 
 cases_map
@@ -78,36 +149,55 @@ cases_map
 Need to add histograms for the response variable we choose, the predictors we choose, and plots for the response v. predictors relationships
 (We can do this in the section following - response variable description and predictor descriptions)
 
-```{r cases-plot-county, warning=FALSE}
-county_cases <- data %>%
+```{r cases-plot-per-capita, warning=FALSE}
+state_capita_deaths <- data %>%
+  filter(date == "2020-04-15") %>%
+  group_by(state) %>%
+  summarise(deaths_per_capita = sum(cases)/sum(pop_2015))
+
+capita_deaths_map <- plot_usmap(data = state_capita_deaths, values = "deaths_per_capita", labels = TRUE, label_color = "gray", color = "red")
+
+capita_deaths_map <- capita_deaths_map + 
+              scale_fill_gradient(low = "white", high = "#CB454A", name = "Deaths Per Capita") +
+              labs(title = "Deaths per Capita by State on April 15, 2020") + 
+              labs(subtitle = "Most Concentrated in New York State.") + 
+              theme(legend.position = "right")
+
+capita_cases_map
+```
+
+
+```{r deaths-plot-county, warning=FALSE}
+county_deaths <- data %>%
   filter(date == "2020-04-15")
 
-county_cases <- merge(x = populationData, y = county_cases, by = "fips", all = TRUE)
+county_deaths <- merge(x = populationData, y = county_deaths, by = "fips", all = TRUE)
 
-county_cases$log_cases <- log(county_cases$cases)
-county_cases$cases[is.na(county_cases$cases)] <- 0
-county_cases$log_cases[is.na(county_cases$log_cases)] <- 0
+county_deaths$log_deaths <- log(county_deaths$deaths)
+county_deaths$deaths[is.na(county_deaths$deaths)] <- 0
+county_deaths$log_deaths[is.na(county_deaths$log_deaths) | is.infinite(county_deaths$log_deaths)] <- 0
 
-county_cases_map <- plot_usmap("counties", data = county_cases, values = "cases", color = "red", size=0.01)
 
-county_cases_map <- county_cases_map + 
-              scale_fill_gradient(low = "white", high = "#CB454A", name = " Cases") +
-              labs(title = "Cases by County on April 15, 2020") + 
-              labs(subtitle = "Most cases are concentrated in New York State.") + 
+county_deaths_map <- plot_usmap("counties", data = county_deaths, values = "deaths", color = "red", size=0.01)
+
+county_deaths_map <- county_deaths_map + 
+              scale_fill_gradient(low = "white", high = "#CB454A", name = "Deaths") +
+              labs(title = "Deaths by County on April 15, 2020") + 
+              labs(subtitle = "Most deaths are concentrated in New York State.") + 
               theme(legend.position = "right")
 
-county_cases_map
+county_deaths_map
 
 
-county_cases_map <- plot_usmap("counties", data = county_cases, values = "log_cases", color = "red", size=0.01)
+county_deaths_map <- plot_usmap("counties", data = county_deaths, values = "log_deaths", color = "red", size=0.01)
 
-county_cases_map <- county_cases_map + 
-              scale_fill_gradient(low = "white", high = "#CB454A", name = "Log Cases") +
-              labs(title = "Log Cases by County on April 15, 2020") + 
-              labs(subtitle = "Most cases are concentrated in New York State.") + 
+county_deaths_map <- county_deaths_map + 
+              scale_fill_gradient(low = "white", high = "#CB454A", name = "Log Deaths") +
+              labs(title = "Log Deaths by County on April 15, 2020") + 
+              labs(subtitle = "Most deaths are concentrated in New York State.") + 
               theme(legend.position = "right")
 
-county_cases_map
+county_deaths_map
 ```
 
 ```{r poverty-plot-county, warning=FALSE}
