@@ -30,6 +30,9 @@ povertyData <- read.csv("PovertyEstimates.csv")
 populationData <- usmap::countypop
 populationData$fips <- as.integer(populationData$fips)
 demoData <- read.csv("stco-mr2010-1.csv")
+
+
+
 ```
 
 
@@ -124,6 +127,28 @@ demographicsData['perc_hispanic'] <- demographicsData$num_hispanic/demoDfPopulat
 demographicsData['perc_nonwhite'] <- demographicsData$num_nonwhite/demoDfPopulation
 
 glimpse(demographicsData)
+
+data <- merge(covidData, povertyData, by.x = 'fips', by.y = 'FIPStxt')
+
+state_cases <- data %>%
+    filter(date == "2020-04-15") %>%
+    group_by(state) %>%
+    summarise(total_cases = sum(cases))
+
+county_cases <- data %>%
+    filter(date == "2020-04-15")
+
+county_cases <- merge(x = populationData, y = county_cases, by = "fips", all = TRUE)
+
+county_cases$log_cases <- log(county_cases$cases)
+county_cases$cases[is.na(county_cases$cases)] <- 0
+county_cases$log_cases[is.na(county_cases$log_cases)] <- 0
+
+county_cases <- county_cases %>%
+    mutate(casesPC = cases/pop_2015)
+county_cases$log_casesPC <- log(county_cases$casesPC)
+county_cases$casesPC[is.na(county_cases$casesPC)] <- 0
+county_cases$log_casesPC[is.na(county_cases$log_casesPC)] <- 0
 ```
 
 
