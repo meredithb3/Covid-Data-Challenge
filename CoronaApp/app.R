@@ -5,6 +5,12 @@ library(ggplot2)
 library(usmap)
 library(ggthemes)
 library(shinydashboard)
+library(skimr)
+library(broom)
+library(knitr) 
+library(rms)
+library(stats)
+library(kableExtra)
 
 covidData <- read.csv("coronacounties.csv")
 povertyData <- read.csv("PovertyEstimates.csv")
@@ -80,6 +86,8 @@ demographicsData['perc_white'] <- demographicsData$num_white/demoDfPopulation
 demographicsData['perc_black'] <- demographicsData$num_black/demoDfPopulation
 demographicsData['perc_hispanic'] <- demographicsData$num_hispanic/demoDfPopulation
 demographicsData['perc_nonwhite'] <- demographicsData$num_nonwhite/demoDfPopulation
+demographicsData['perc_asian'] <- demographicsData$num_asian/demoDfPopulation
+demographicsData['perc_other'] <- demographicsData$num_other/demoDfPopulation
 
 data <- merge(covidData, povertyData, by.x = 'fips', by.y = 'FIPStxt')
 data <- merge(data, populationData, by.x = 'fips', by.y = 'fips')
@@ -103,6 +111,21 @@ county_deaths <- data %>%
     filter(date == "2020-04-15")
 
 plot_poverty_data <- merge(populationData, povertyData, by.x = 'fips', by.y = 'FIPStxt')
+
+county_deaths <- county_deaths %>%
+    filter(logDeathsPC != -Inf)
+
+county_deaths$POVALL_2018 <- as.numeric(gsub(",", "", county_deaths$POVALL_2018))
+county_deaths$POV017_2018 <- as.numeric(gsub(",", "", county_deaths$POV017_2018))
+county_deaths$POV517_2018 <- as.numeric(gsub(",", "", county_deaths$POV517_2018))
+county_deaths$MEDHHINC_2018 <- as.numeric(gsub(",", "", county_deaths$MEDHHINC_2018))
+
+county_deaths <- county_deaths %>%
+    filter(!is.na(Rural.urban_Continuum_Code_2003))
+county_deaths <- county_deaths %>%
+    filter(!is.na(Urban_Influence_Code_2003))
+
+county_deaths$Rural.urban_Continuum_Code_2013 <- as.factor(county_deaths$Rural.urban_Continuum_Code_2013)
 
 
 # Define UI for application that draws a histogram
@@ -146,22 +169,22 @@ ui <- dashboardPage(skin = "purple",
             #eda tab contents
             tabItem(tabName = "eda",
                     fluidRow(
-                        box(title = "Deaths per Capita Map", status = "primary", solidHeader = TRUE, height = 520,
+                        box(title = "Deaths per Capita Map", status = "primary", solidHeader = TRUE, height = 600,
                             plotOutput("countyDPC"), 
                             "Looking at our plot of deaths per capita by county, we see that there are some 
                             counties (namely in New York, Louisiana, and Michigan) that have relatively much
                             larger deaths per capita than most others."),
-                        box(title = "Deaths per Capita Histogram", status = "primary", solidHeader = TRUE, height = 520,
+                        box(title = "Deaths per Capita Histogram", status = "primary", solidHeader = TRUE, height = 600,
                             plotOutput("histCDPC"),
                             "The histogram of deaths per capita by county confirms this as it has extreme right skew.
                             We should analyze the log of this variable to see if it has more even spread.", br()),
-                        box(title = "Log Deaths per Capita Map", status = "warning", solidHeader = TRUE, height = 530,
+                        box(title = "Log Deaths per Capita Map", status = "warning", solidHeader = TRUE, height = 600,
                             plotOutput("countyLDPC"),
                             "Looking at this new plot of the log of deaths per capita by county, we see much more even 
                             spread of values. We should note that counties in black have zero deaths and thus we will 
                             only analyze counties with deaths as we cannot draw conclusions for counties that have not
                             experienced COVID-19 outbreaks."),
-                        box(title = "Log Deaths per Capita Histogram", status = "warning", solidHeader = TRUE, height = 530,
+                        box(title = "Log Deaths per Capita Histogram", status = "warning", solidHeader = TRUE, height = 600,
                             plotOutput("histLDPC"),
                             "The histogram of the log of deaths per capita by county appears relatively nornal and symmetric.
                             This is in agreement with the more even spread of counties affected in the map to the right and 
@@ -172,10 +195,30 @@ ui <- dashboardPage(skin = "purple",
             #model tab contents
             tabItem(tabName = "model",
                     fluidRow(
-                        box(title = "box1model", status = "primary", solidHeader = TRUE,
+                            column(width = 5, 
+                                   box(title = "Variables for the Model", status = "primary", solidHeader = TRUE,
+                            "The first thing we do to create our model is establish the variable that we 
+                            would like to be our response as well as its corresponding predictors. We previously
+                            decided that the best response variable to use would be the log of deaths per capita 
+                            in a county as it had the most symmetric and normal distribution and would be a good 
+                            indicator of how well a county is dealing with the impact of COVID-19. The predictor models 
+                            we have decided to test in our full model are the number of cases, the rural-urban continuum code
+                            (it measures the level of density for a county), the percent of the county that is in poverty, the percent
+                            that has medical insurance, its population, and the percent of a county that is white, black, asian, or 'other.'"
+                            ),
                             
-                        )
+                            box(title = "Selection Methods", status = "primary", solidHeader = TRUE,
+                            "In order to select a model that best fits the data without including too many 
+                            extraneous variables, we used the backwards selection method and used BIC as a criteria. 
+                            This will maximize the efficiency of our model. The final model after selection is shown to
+                            the right."
+                            )
+                        ),
+                            
+                            box(title = "model output", status = "danger", solidHeader = TRUE,
+                                htmlOutput("finalModel"))
                     )
+
             ),
             
             #analysis tab contents
@@ -259,6 +302,16 @@ server <- function(input, output) {
             labs(title = "Histogram of Number of log of Deaths per Capita by County", x = "log(Deaths/Capita)",
                  y = "# Counties with log(Deaths/Capita)")
     })
+    output$finalModel <- renderText({
+        final_model <- lm(logDeathsPC ~ cases + Rural.urban_Continuum_Code_2013 + 
+                              PCTPOVALL_2018 +
+                              pop_2015 + perc_white + perc_black, data = county_deaths)
+        
+        tidy(final_model, format = "markdown") %>%
+            kable("html",digits = 7) %>%
+            kable_styling()
+    })
+    
 }
 
 # Run the application 
