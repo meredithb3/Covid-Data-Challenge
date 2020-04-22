@@ -113,8 +113,8 @@ create_fips <- function(ste, cnty){
   return(as.integer(paste(s,c,sep="")[1]))
 }
 
-demographicsData['fips'] <- mapply(create_fips, demographicsData['STATE'], 
-                                    demographicsData['COUNTY'])
+demographicsData['fips'] <- mapply(create_fips, demographicsData$STATE, 
+                                    demographicsData$COUNTY)
 
 demoDfPopulation <- demographicsData['num_white'] + demographicsData['num_nonwhite'] 
 
@@ -124,8 +124,6 @@ demographicsData['perc_hispanic'] <- demographicsData$num_hispanic/demoDfPopulat
 demographicsData['perc_nonwhite'] <- demographicsData$num_nonwhite/demoDfPopulation
 
 glimpse(demographicsData)
-
-data <- merge(covidData, povertyData, by.x = 'fips', by.y = 'FIPStxt')
 ```
 
 
@@ -183,6 +181,8 @@ county_deaths <- data %>%
   filter(date == "2020-04-15")
 
 county_deaths <- merge(x = populationData, y = county_deaths, by = "fips", all = TRUE)
+
+county_deaths$pop_2015 <- county_deaths$pop_2015.x
 
 county_deaths$log_deaths <- log(county_deaths$deaths)
 county_deaths$deaths[is.na(county_deaths$deaths)] <- 0
@@ -249,33 +249,33 @@ This historam of the log(cases) per county shows much more evidence of normailty
 Another possible option to analyze as a response would be the number of cases per capita of a county. This may work better as it would correlate significantly less with population as we have "accounted" for this already in the response.
 
 ```{r percapita}
-county_cases <- county_cases %>%
-  mutate(casesPC = cases/pop_2015)
+county_deaths <- county_deaths %>%
+  mutate(casesPC = deaths/pop_2015)
 
-casesPC_map <- plot_usmap("counties", data = county_cases, values = "casesPC", color = "red", size=0.01)
+casesPC_map <- plot_usmap("counties", data = county_deaths, values = "casesPC", color = "red", size=0.01)
 
 casesPC_map <- casesPC_map + 
-              scale_fill_gradient(low = "white", high = "limegreen", name = "Cases Per Capita") +
+              scale_fill_gradient(low = "white", high = "limegreen", name = "Deaths Per Capita") +
               labs(title = "Cases per Capita (by county)") + 
               theme(legend.position = "right")
 
 casesPC_map
 
-county_cases %>%
+county_deaths %>%
   ggplot(mapping = aes(x = casesPC)) +
   geom_histogram(binwidth = 0.0001) + 
-  labs(title = "Histogram of Number of  Cases/Capita per County", x = "Number of Cases/Capita",
-       y = "# Counties with X Cases per Capita")
+  labs(title = "Histogram of Number of  Deaths/Capita per County", x = "Number of Deaths/Capita",
+       y = "# Counties with X Deaths per Capita")
 ```
 
 Similarly to the map of cases per county, we see a large discrepancy between counties and may benefit from mapping the log of the cases per capita in order to better normalize the distribution. The histogram confirms this theory as it is majorly right skewed.
 
 ```{r logcasesPC}
-county_cases$log_casesPC <- log(county_cases$casesPC)
-county_cases$casesPC[is.na(county_cases$casesPC)] <- 0
-county_cases$log_casesPC[is.na(county_cases$log_casesPC)] <- 0
+county_deaths$log_casesPC <- log(county_deaths$casesPC)
+county_deaths$casesPC[is.na(county_deaths$casesPC)] <- 0
+county_deaths$log_casesPC[is.na(county_deaths$log_casesPC)] <- 0
 
-logcasesPC_map <- plot_usmap("counties", data = county_cases, values = "log_casesPC", color = "red", size=0.01)
+logcasesPC_map <- plot_usmap("counties", data = county_deaths, values = "log_casesPC", color = "red", size=0.01)
 
 logcasesPC_map <- logcasesPC_map + 
               scale_fill_gradient(low = "white", high = "limegreen", name = "Log of Cases per Capita") +
@@ -284,7 +284,7 @@ logcasesPC_map <- logcasesPC_map +
 
 logcasesPC_map
 
-county_cases %>%
+county_deaths %>%
   ggplot(mapping = aes(x = log_casesPC)) +
   geom_histogram(binwidth = 0.3) + 
   labs(title = "Histogram of Number of log(Cases/Capita per County)", x = "Number of log(Cases/Capita)",
