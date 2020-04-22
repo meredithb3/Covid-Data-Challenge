@@ -51,16 +51,22 @@ covidData %>%
   count()
 ```
 
-At first glimpse, the COVID-19 dataset has 61,971 observations and 6 variables. However, after grouping by FIPS code, we see that the dataset contains data on 2,709 counties, with repeated observations representing cases on different dates.
+At first glimpse, the COVID-19 dataset has 61,971 observations and 6 variables. However, after grouping by FIPS code, we see that the dataset contains data on 2,709 counties, with repeated observations representing cases on different dates. We do however notice that this data does not seem to be cumulative and we should frame our analyses with this in mind.
 
 ```{r pov-data}
 glimpse(povertyData)
 ```
 
-The Poverty dataset has 3,193 observations (counties, states, and the US) and 34 variables.
+The Poverty dataset has 3,193 observations (counties, states, and the US) and 34 variables. Since a wealthy county with a high population may still have a higher number of total individuals in poverty than a highly impoverished county with an increidbly low population, we will use the percent in poverty feature when conducting our visual analyses.
 
-```{r demoData-setup}
+```{r demoData-glimpse}
 glimpse(demoData)
+```
+
+We notice that our data on demographics is split up by age group and has a large number of classifications for the race of an individual which is important for census considerations but would complicate our modelling and visualizations, so we will limit our data to exclude age and bundle many of the less frequent races.
+
+
+```{r demoData-setup, message=FALSE}
 white_people_by_county <- demoData %>% 
         filter(IMPRACE == 1, ORIGIN == 1) %>% 
         group_by(STATE, COUNTY) %>% 
@@ -132,9 +138,9 @@ glimpse(demographicsData)
 ```
 
 
-Both the COVID-19 dataset and the Poverty dataset have a variation of the variable `fips`, which is the Federal Information Processing Standard [https://en.wikipedia.org/wiki/FIPS_county_code] that allows counties to be uniquely identified. 
+All of our datasets have a variation of the variable `fips`, which is the Federal Information Processing Standard [https://en.wikipedia.org/wiki/FIPS_county_code] that allows counties to be uniquely identified. 
 
-Thus, the FIPS variable is a good variable by which to join these 2 datasets:
+Thus, the FIPS variable is a good variable by which to join these 3 datasets:
 
 ```{r join}
 data <- merge(covidData, povertyData, by.x = 'fips', by.y = 'FIPStxt')
@@ -143,17 +149,28 @@ data <- merge(data, demographicsData, by.x = 'fips', by.y = 'fips')
 glimpse(data)
 ```
 
-```{r cases-plot, warning=FALSE}
-state_cases <- data %>%
-  filter(date == "2020-04-15") %>%
-  group_by(state) %>%
-  summarise(total_deaths = sum(deaths))
+We will focus our analysis on the number of deaths resulting from COVID-19 for a few diferrent reasons. Testing varies greatly between states and counties. A region that has not done that much testing could appear to have a low number of cases but have the same number of deaths as a region that has done a lot of testing and thus has turned up a large number of less severe COVID-19 cases. Meanwhile, analyzing deaths has a lower correlation with the number of tests performed as cases that are severe enough to end with a mortality tend to receive professional medical care and, thus, a test at some point. (We realize that this is not always the case as regions that are under-resourced often do not have the capacity to tend to all individuals or even test incredibly sick individuals.) Additionally, more affluent individuals with a primary doctor have had easier access to testing in the United States, and thus, this would lend us to believe that the percent of cases in affluent regions would be inflated when compared to the percent of cases in non-affluent regions in the United States. 
 
-cases_map <- plot_usmap(data = state_cases, values = "total_deaths", labels = TRUE, label_color = "gray", color = "red")
+Beginning our EDA, we will first look at the total number of deaths in the United States by state. 
+
+
+```{r cases-plot, warning=FALSE}
+county_deaths <- data %>%
+  group_by(fips) %>%
+  mutate(total_deaths = sum(deaths)) %>%
+  mutate(deathsPC = total_deaths/pop_2015) %>%
+  mutate(logDeathsPC = log(deathsPC)) %>%
+  filter(date == "2020-04-15")
+
+state_deaths <- county_deaths %>%
+  group_by(state) %>%
+  summarise(total_state_deaths = sum(total_deaths))
+
+cases_map <- plot_usmap(data = state_deaths, values = "total_state_deaths", labels = TRUE, label_color = "gray", color = "red")
 
 cases_map <- cases_map + 
               scale_fill_gradient(low = "white", high = "#CB454A", name = "Deaths") +
-              labs(title = "Deaths by State on April 15, 2020") + 
+              labs(title = "Deaths by State before April 16, 2020") + 
               labs(subtitle = "Most deaths are concentrated in New York State.") + 
               theme(legend.position = "right")
 
@@ -164,16 +181,15 @@ Need to add histograms for the response variable we choose, the predictors we ch
 (We can do this in the section following - response variable description and predictor descriptions)
 
 ```{r cases-plot-per-capita, warning=FALSE}
-state_capita_deaths <- data %>%
-  filter(date == "2020-04-15") %>%
+state_capita_deaths <- county_deaths %>%
   group_by(state) %>%
-  summarise(deaths_per_capita = sum(deaths)/sum(pop_2015))
+  summarise(state_deathPC = 1000*sum(total_deaths)/sum(pop_2015))
 
-capita_deaths_map <- plot_usmap(data = state_capita_deaths, values = "deaths_per_capita", labels = TRUE, label_color = "gray", color = "red")
+capita_deaths_map <- plot_usmap(data = state_capita_deaths, values = "state_deathPC", labels = TRUE, label_color = "gray", color = "red")
 
 capita_deaths_map <- capita_deaths_map + 
-              scale_fill_gradient(low = "white", high = "#CB454A", name = "Deaths Per Capita") +
-              labs(title = "Deaths per Capita by State on April 15, 2020") + 
+              scale_fill_gradient(low = "white", high = "#CB454A", name = "Deaths Per 1000 People") +
+              labs(title = "Deaths per 1000 People by State before April 16, 2020") + 
               theme(legend.position = "right")
 
 capita_deaths_map
