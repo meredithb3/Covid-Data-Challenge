@@ -445,8 +445,29 @@ In general, as the code number increases, a county is smaller and less urban.
 The baseline rural urban continuum code for our analysis is a code 1. If a county has a rural urban continuum code of 2, we expect there to be 0.8997374 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 3, we expect there to be 0.7460708 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 4, we expect there to be 0.8093420 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 5, we expect there to be 0.8770798 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 6, we expect there to be 0.9905803 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 7, we expect there to be 1.1904460 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 8, we expect there to be 1.4139911 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 9, we expect there to be 1.8102279 deaths per capita more than counties with a baseline code on average. This trend seems to indicate that as a county becomes less urban, the average deaths per capita seems to increase.
 
 #### Interaction Effects
-```{r interaction, warning = FALSE}
+```{r full-interaction, warning = FALSE}
+full_interaction <- lm(logDeathsPC ~ logCases + 
+                    Rural.urban_Continuum_Code_2013 + PCTPOVALL_2018 +
+                    log_pop_2015 + perc_white + perc_black + 
+                      logCases*Rural.urban_Continuum_Code_2013 +
+                      logCases*PCTPOVALL_2018 + logCases*perc_white +
+                      logCases*perc_black +
+                      Rural.urban_Continuum_Code_2013*perc_white + 
+                      Rural.urban_Continuum_Code_2013*perc_black + 
+                      Rural.urban_Continuum_Code_2013*PCTPOVALL_2018 + 
+                      Rural.urban_Continuum_Code_2013*log_pop_2015 + 
+                      PCTPOVALL_2018*perc_white + PCTPOVALL_2018*perc_black +
+                      PCTPOVALL_2018*log_pop_2015 + log_pop_2015*perc_white + 
+                      log_pop_2015*perc_black,
+                    data = county_deaths)
 
+kable(tidy(full_interaction, format = "markdown"), digits = 4)
+```
+
+
+```{r full-interaction-selection, warning = FALSE}
+interaction_model <- step(full_interaction, direction = "backward", trace = FALSE)
+kable(tidy(interaction_model, format = "markdown"), digits = 4)
 ```
 
 
@@ -524,9 +545,11 @@ ggplot(data = county_deaths, mapping = aes(x = predicted, y = resid)) +
   geom_point() + 
   geom_hline(yintercept = 0, color = "red") + 
   labs(title = "Residuals vs. Predicted Log Deaths/Capita",
-       x = "Log(Price)",
+       x = "Log(Deaths/Capita)",
        y = "Residual")
 ```
+
+We see that there does not seem to be any correlation between the residuals and the log(Deaths/Capita). Therefore, we assume that our model fits the constant variance assumption, and we will proceed to check normality of our model.
 
 #### Normality
 
