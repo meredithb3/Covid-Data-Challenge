@@ -131,6 +131,8 @@ county_deaths <- county_deaths %>%
     mutate(logCases = log(cases),
            log_pop_2015 = log(pop_2015))
 
+county_deaths$predicted = predict.lm(final)
+county_deaths$resid = residuals(final)
 
 
 # Define UI for application that draws a histogram
@@ -143,8 +145,9 @@ ui <- dashboardPage(skin = "purple",
             menuItem("The Data", tabName = "data", icon = icon("table")),
             menuItem("Exploring the Data", tabName = "eda", icon = icon("search")),
             menuItem("Creating Our Model", tabName = "model", icon = icon("user-md")),
+            menuItem("Assumptions", tabName = "assumptions", icon = icon("question")),
             menuItem("Model Analysis", tabName = "analysis", icon = icon("chart-line")),
-            menuItem("Model Interpretation", tabName = "interp", icon = icon("question")),
+            menuItem("Model Interpretation", tabName = "interp", icon = icon("lightbulb")),
             menuItem("Conclusion", tabName = "conclusion", icon = icon("poll-h"))
         )
     ),
@@ -224,27 +227,47 @@ ui <- dashboardPage(skin = "purple",
                             )
                         ),
                             
-                            box(title = "model output", status = "danger", solidHeader = TRUE,
+                            box(title = "Model Output", status = "danger", solidHeader = TRUE,
                                 htmlOutput("finalModel"))
                     )
 
             ),
             
             
-            #analysis tab contents
-            tabItem(tabName = "analysis",
+            #assumptions tab contents
+            tabItem(tabName = "assumptions",
                     fluidRow(
-                        
                         box(title = "Assumption 1: Linearity", status = "success", solidHeader = TRUE,
-                            "We can check the linearity assumption by graphing the response variable against all the predictor variables within our model. ",
+                            "We can check the linearity assumption by graphing the response variable against all the predictor variables within our model. ", br(), br(),
                             selectInput("predictor","Predictor Variable:",
                                         choices = list("log(cases)", "Rural-Urban Continuum Code", 
                                                     "Percent in Poverty", "log(Population)", "Percent White",
                                                     "Percent Black")),
                             plotOutput("pVr"),
                             textOutput("pVrTxt")
-                        )
+                        ),
+                        
+                        box(title = "Assumption 2: Constant Variance", status = "success", solidHeader = TRUE,
+                            "Next, we can check the constant variance assumption by looking at the plot of the residuals of each predictor variable and the response variable. For this assumption to be satisfied, the regression variance must be the around the same for each predictor variable (randomly scattered points around y=0 line in residual plot).", br(), br(),
+                            plotOutput("constVar"),
+                        )),
+                    fluidRow(
+                        box(title = "Assumption 3: Normality", status = "success", solidHeader = TRUE,
+                            "Next, we can check the normality assumption by plotting the histogram of the residuals and the normal QQ plot of the residuals to check for any discrepancies and departures from normality.", br(), br(),
+                            selectInput("normality","Plot Preference:",
+                                        choices = list("Histogram of Residuals", "Normal QQ Plot")),
+                            plotOutput("normalityPlot"),
+                            textOutput("normalityTxt")
+                            )
+                        
                     )
+            ),
+            
+            tabItem(tabName = "analysis",
+                    fluidRow(
+                        box(title = "analysis1")
+            
+                        )
             ),
             
             
@@ -411,7 +434,43 @@ server <- function(input, output) {
             }
     })
     
+    output$constVar <- renderPlot({
+        ggplot(data = county_deaths, mapping = aes(x = predicted, y = resid)) + 
+            geom_point() + 
+            geom_hline(yintercept = 0, color = "red") + 
+            labs(title = "Residuals vs. Predicted Log Deaths/Capita",
+                 x = "Log(Price)",
+                 y = "Residual")
+    })
     
+    output$normalityPlot <- renderPlot({
+        if(input$normality == "Histogram of Residuals"){
+            ggplot(data = county_deaths, mapping = aes(x = resid)) +   
+                geom_histogram(color = "Black", fill = "Light Blue", binwidth = 0.05) + 
+                labs(title = "Distribution of Residuals",
+                     x = "Residuals",
+                     y = "Frequency")
+        }
+            
+        else
+            if(input$normality == "Normal QQ Plot"){
+                ggplot(data = county_deaths, mapping = aes(sample = resid)) +  
+                    stat_qq() + 
+                    stat_qq_line() +
+                    labs(title = "Normal QQ Plot of Residuals") 
+            }
+    })
+    
+    output$normalityTxt <- renderText({
+        if(input$normality == "Histogram of Residuals"){
+            "The distribution of residuals from our model appears to be mostly normal, however there is a slight left-skewness Therefore, we would like to investigate the normality of the model a bit further by looking at a QQ plot."
+        }
+        
+        else
+            if(input$normality == "Normal QQ Plot"){
+                "From the two graphs above, we can see that the normality assumption is mostly satisfied. While there does appear to be some deviation from the normal QQ plot towards the edges of the graphs, we believe that this is enough to satisfy the normality for this design, so we will process with our testing."
+            }
+    })
     
 }
 
