@@ -172,7 +172,7 @@ capita_deaths_map <- capita_deaths_map +
               labs(subtitle = "Most Concentrated in New York State.") + 
               theme(legend.position = "right")
 
-capita_cases_map
+capita_deaths_map
 ```
 
 
@@ -210,7 +210,7 @@ county_deaths_map
 ```
 
 ```{r poverty-plot-county, warning=FALSE}
-plot_poverty_data <- data <- merge(populationData, povertyData, by.x = 'fips', by.y = 'FIPStxt')
+plot_poverty_data <- merge(populationData, povertyData, by.x = 'fips', by.y = 'FIPStxt')
 
 county_cases_map <- plot_usmap("counties", data = plot_poverty_data, values = "PCTPOVALL_2018", color = "red", size=0.01)
 
@@ -227,7 +227,7 @@ We should look at histograms of both cases and log(cases) to see if the apparent
 ```{r cases-hist}
 county_cases %>%
   ggplot(mapping = aes(x = cases)) +
-  geom_histogram(binwidth = 600) + 
+  geom_histogram(binwidth=600) + 
   labs(title = "Histogram of Number of Cases per County", x = "Number of Cases",
        y = "# Counties with X Cases")
 ```
@@ -293,8 +293,11 @@ We see a much more even distribution using the log of cases per capita. It is im
 
 ### Description of the Response Variable
 
+The response variable for use in the model will be log of cases per capita. As shown above, this version of the response variable deals with some of the skewness in cases per capita. 
+
 ### Descriptions of the Regressors
 
+THe full model will start with all of the variables included in the `data` dataset, as this is the dataset in which information about COVID-19, demographics, poverty-levels, and population statistics has been combined. Once this full model has been created, backwards selection will be used to select the variables that are most significant in predicting log cases per capita.
 
 # Section 2: Regression Analysis 
 ### Generating Our Model
@@ -317,23 +320,3 @@ We see a much more even distribution using the log of cases per capita. It is im
 ### Discussion of Results
 
 ### Limitations and Ideas for Further Research 
-
-
-
-# Exploratory Data Analysis
-
-
-
-# Regression
-
-Ideas for regression
-- Linear regression: predict from multiple factors (FIP code, poverty rate, race breakdown, etc.) their number of cases or deaths
-- Logistic regression: predict if factors contribute to a death or not (don't think we have specific data on specific cases so this could be challenging)
-
-Assumptions for regression
-- Independence
-- Linearity
-- Normality
-- Constant Variance
-
-This website has specific graphs that would be helpful to replicate, but don't know where to get the data on an aggregate level: [https://www.apmresearchlab.org/covid/deaths-by-race#black]
