@@ -431,6 +431,8 @@ kable(tidy(final, format = "markdown"), digits = 7)
 kable(tidy(final, format = "markdown", exponentiate = TRUE), digits = 7)
 ```
 
+### Interpreting The Coefficients
+
 Now that we have determined that our model is satisfactory, we can begin to provide an interpretation of the model. We see, unsurprisingly, that the number of cases has a high correlation with the number of deaths per capita in a county. However, looking at the p-values of the model coefficients we also see that there is strong evidence that there is a correlation between certain urban continuum codes, or how large and urbanized a county is, and how many deaths per capita there are in the county. Interestingly, the two codes with the strongest evidence (or the lowest p-value) to be correlated with the deaths per capita in a county are for counties with a code 9 or "less than 2,500 urban population, not adjacent to a metro area" and for counties with a code 3 or "counties in metro areas of fewer than 250,000 population."
 
 A larger urban continuum code indicates that a county is less urban and less populated.
@@ -441,6 +443,11 @@ A key of all of the rural urban continuum codes can be found at https://seer.can
 In general, as the code number increases, a county is smaller and less urban.
 
 The baseline rural urban continuum code for our analysis is a code 1. If a county has a rural urban continuum code of 2, we expect there to be 0.8997374 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 3, we expect there to be 0.7460708 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 4, we expect there to be 0.8093420 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 5, we expect there to be 0.8770798 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 6, we expect there to be 0.9905803 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 7, we expect there to be 1.1904460 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 8, we expect there to be 1.4139911 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 9, we expect there to be 1.8102279 deaths per capita more than counties with a baseline code on average. This trend seems to indicate that as a county becomes less urban, the average deaths per capita seems to increase.
+
+#### Interaction Effects
+```{r interaction, warning = FALSE}
+
+```
 
 
 ### Testing Our Assumptions
@@ -512,31 +519,55 @@ couty_deaths <- county_deaths %>%
 ```
 
 ```{r predict-resid}
-ggplot(data = data, mapping = aes(x = predicted, y = resid)) + 
+ggplot(data = county_deaths, mapping = aes(x = predicted, y = resid)) + 
   geom_point() + 
   geom_hline(yintercept = 0, color = "red") + 
-  labs(title = "Residuals vs. Predicted Log(Price)",
+  labs(title = "Residuals vs. Predicted Log Deaths/Capita",
        x = "Log(Price)",
        y = "Residual")
 ```
 
 #### Normality
 
+Next, we can check the normality assumption by plotting the histogram of the residuals and the normal QQ plot of the residuals to check for any discrepancies and departures from normality.
+
+```{r residhist}
+ggplot(data = county_deaths, mapping = aes(x = resid)) +   
+  geom_histogram(color = "Black", fill = "Light Blue", binwidth = 0.05) + 
+  labs(title = "Distribution of Residuals",
+       x = "Residuals",
+       y = "Frequency")
+```
+
+```{r residqq}
+ggplot(data = county_deaths, mapping = aes(sample = resid)) +  
+  stat_qq() + 
+  stat_qq_line() +
+  labs(title = "Normal QQ Plot of Residuals") 
+```
+
+From the two graphs above, we can see that the normality assumption is [SATISFIED/NOT SATISFIED].
+
 #### Independence
 
+This is maybe not true? States and counties affect each other.
+
 ### Checking Model Diagnostics
+
+```{r aug-model}
+final_output <- augment(final) %>%
+  mutate(obs_num = row_number())
+
+head(final_output, 5)
+```
+
+The model diagnostics for MLR are checking leverage, standardized residuals, Cook's distance, and VIF values. 
 
 #### Multicollinearity
 ```{r multicolvif}
 vif(final)
 ```
 
-PROBLEM!
-
-#### Interaction Effects
-```{r interaction, warning = FALSE}
-
-```
 
 #### Influential Points
 
@@ -568,11 +599,6 @@ high_lev %>%
 ```
 
 We see that there are no observations involved in our model that have a cooks distance of greater than 1. Thus, we have no overly influential points and may continue with the rest of our analysis. 
-
-### Interpreting The Coefficients
-
-Now that we have determined that our model is satisfactory, we can begin to provide an interpretation of the model. 
-
 
 # Section 3: Conclusion
 
