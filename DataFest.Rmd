@@ -514,8 +514,9 @@ Both the above graphs of specific percents of the population appear to violate t
 Next, we can check the constant variance assumption by looking at the plot of the residuals of each predictor variable and the response variable. For this assumption to be satisfied, the regression variance must be the around the same for each predictor variable (randomly scattered points around y=0 line in residual plot).
 
 ```{r ridemodelresid}
-couty_deaths <- county_deaths %>%
-  mutate(predicted = predict.lm(final), resid = residuals(final))
+county_deaths$predicted = predict.lm(final)
+county_deaths$resid = residuals(final)
+
 ```
 
 ```{r predict-resid}
@@ -539,6 +540,8 @@ ggplot(data = county_deaths, mapping = aes(x = resid)) +
        y = "Frequency")
 ```
 
+The distribution of residuals from our model appears to be mostly normal, however there is a slight left-skewness Therefore, we would like to investigate the normality of the model a bit further by looking at a QQ plot.
+
 ```{r residqq}
 ggplot(data = county_deaths, mapping = aes(sample = resid)) +  
   stat_qq() + 
@@ -546,11 +549,11 @@ ggplot(data = county_deaths, mapping = aes(sample = resid)) +
   labs(title = "Normal QQ Plot of Residuals") 
 ```
 
-From the two graphs above, we can see that the normality assumption is [SATISFIED/NOT SATISFIED].
+From the two graphs above, we can see that the normality assumption is mostly satisfied. While there does appear to be some deviation from the normal QQ plot towards the edges of the graphs, we believe that this is enough to satisfy the normality for this design, so we will process with our testing.
 
 #### Independence
 
-This is maybe not true? States and counties affect each other.
+We do have a few concerns about the independence of our observations, mainly we believe that there may be some correlation between neighboring counties. Since the virus must be transmitted from person to person under our current knowledge, we believe that neighboring counties, which are divided not by a physical border, but just by a cartographic line, may have a highly correlated number of deaths per capita, as well as similar characteristics or features. However, we will proceed with caution in our analysis. 
 
 ### Checking Model Diagnostics
 
