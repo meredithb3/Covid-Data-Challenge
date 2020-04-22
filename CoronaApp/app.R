@@ -126,11 +126,12 @@ ui <- dashboardPage(skin = "purple",
             
             #intro tab contents
             tabItem(tabName = "intro",
-                    fluidRow(
-                        box(title = "Background Information", status = "primary", solidHeader = TRUE,
-                            
-                            )
-                    )
+                    box(title = "Introduction", status = "primary", solidHeader = TRUE,
+                       htmlOutput(outputId = "introText")
+                        ),
+                    box(title = "Purpose", status = "primary", solidHeader = TRUE,
+                        htmlOutput(outputId = "purposeText")
+                        )
             ),
             
             #data tab contents
@@ -187,6 +188,26 @@ ui <- dashboardPage(skin = "purple",
 # Define server logic required to draw a histogram
 server <- function(input, output) {
 
+    output$introText <- renderText({
+        txt <- "Arguably, the largest issue the world has had to face as a collective in modern times 
+        is the issue of the novel coronavirus (COVID-19) running rampant throughout countries and leaving
+        trails of bodies in its wake. Schools and workplaces have been shut down and people have been 
+        restricted to their homes by government mandates throughout the United States. Economies have plummetted 
+        and we are seeing the largest levels of unemployment that we have seen in ages. For our data analysis, 
+        we decidedto perform a regression analysis on the death rate of COVID-19 on United States counties using 
+        several characteristics as predictors."
+        paste(txt)
+    })
+    output$purposeText <- renderText({
+        txt <- "In the United States we know there is a large disparity of wealth and resources throughout 
+        its citizens. As is with any major issue, certain communitites will likely be affected by a greater 
+        degree than others. Due to issues like systemic racism, the opression of minorities, and a lack 
+        of healthcare options availible to America's lower income brackets, it is very possible that these 
+        communities will be ravaged by the impacts of COVID-19 significantly more than others with greater
+        priviliges and resources. Using our analysis, we will hopefully be able to analyze which characteristics of a 
+        community (we will treat counties as the 'community' level in question) lead to a higher death rate and thus 
+        unequal impact."
+    })
 }
 
 # Run the application 
