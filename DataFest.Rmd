@@ -422,7 +422,9 @@ After performing the transformations on 3 of the variables, the final model need
 ```{r final-model-2, warning=FALSE, message=FALSE}
 county_deaths <- county_deaths %>%
   mutate(logCases = log(cases),
-         log_pop_2015 = log(pop_2015))
+         log_pop_2015 = log(pop_2015),
+         log_perc_black = log(perc_black),
+         log_perc_white = log(perc_white))
 
 final <- lm(logDeathsPC ~ logCases + Rural.urban_Continuum_Code_2013 + 
                     PCTPOVALL_2018 + log_pop_2015 + perc_white + perc_black, data = county_deaths)
@@ -545,11 +547,65 @@ ggplot(data = county_deaths, mapping = aes(x = predicted, y = resid)) +
   geom_point() + 
   geom_hline(yintercept = 0, color = "red") + 
   labs(title = "Residuals vs. Predicted Log Deaths/Capita",
-       x = "Log(Deaths/Capita)",
-       y = "Residual")
+       x = "Predicted Log(Deaths/Capita)",
+       y = "Residuals")
 ```
 
-We see that there does not seem to be any correlation between the residuals and the log(Deaths/Capita). Therefore, we assume that our model fits the constant variance assumption, and we will proceed to check normality of our model.
+```{r logcases-resid}
+ggplot(data = county_deaths, mapping = aes(x = logCases, y = resid)) + 
+  geom_point() + 
+  geom_hline(yintercept = 0, color = "red") + 
+  labs(title = "Residuals vs. Log Cases",
+       x = "Log(Cases)",
+       y = "Residuals")
+```
+
+```{r pctpov-resid}
+ggplot(data = county_deaths, mapping = aes(x = PCTPOVALL_2018, y = resid)) + 
+  geom_point() + 
+  geom_hline(yintercept = 0, color = "red") + 
+  labs(title = "Residuals vs. Percent in Poverty",
+       x = "Percent in Poverty",
+       y = "Residuals")
+```
+
+```{r logpop-resid}
+ggplot(data = county_deaths, mapping = aes(x = log_pop_2015, y = resid)) + 
+  geom_point() + 
+  geom_hline(yintercept = 0, color = "red") + 
+  labs(title = "Residuals vs. Log(Population)",
+       x = "Log(Population)",
+       y = "Residuals")
+```
+
+```{r perc_black-resid}
+ggplot(data = county_deaths, mapping = aes(x = perc_black, y = resid)) + 
+  geom_point() + 
+  geom_hline(yintercept = 0, color = "red") + 
+  labs(title = "Residuals vs. Percentage of Black Residents",
+       x = "Percentage of Black Residents",
+       y = "Residuals")
+```
+
+```{r perc_white-resid}
+ggplot(data = county_deaths, mapping = aes(x = perc_white, y = resid)) + 
+  geom_point() + 
+  geom_hline(yintercept = 0, color = "red") + 
+  labs(title = "Residuals vs. Percentage of White Residents",
+       x = "Percentage of White Residents",
+       y = "Residuals")
+```
+
+```{r urban_code-resid}
+ggplot(data = county_deaths, mapping = aes(x = Rural.urban_Continuum_Code_2013, y = resid)) + 
+  geom_boxplot() + 
+  geom_hline(yintercept=0,color="red") +
+  labs(x = "Female", 
+       y="Residuals")
+```
+
+
+We see that there does not seem to be any correlation between the residuals and the log(Deaths/Capita) or in any of the graphs plotting our residuals against our predictor variables. Therefore, we assume that our model fits the constant variance assumption, and we will proceed to check normality of our model.
 
 #### Normality
 
