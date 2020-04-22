@@ -12,6 +12,9 @@ library(dplyr)
 library(ggplot2)
 library(usmap)
 library(ggthemes)
+library(skimr)
+library(broom)
+library(knitr) 
 ```
 
 ```{r setup, include=FALSE}
@@ -277,20 +280,163 @@ The response variable for use in the model will be log of deaths per capita. As 
 
 ### Descriptions of the Regressors
 
-THe full model will start with all of the variables included in the `data` dataset, as this is the dataset in which information about COVID-19, demographics, poverty-levels, and population statistics has been combined. Once this full model has been created, backwards selection will be used to select the variables that are most significant in predicting log cases per capita.
+The full model will predict from all variables other than those that identify the area which the data point represents, such as FIPS code, data, county, and state.
+
 
 # Section 2: Regression Analysis 
 ### Generating Our Model
 
+```{r modelgen}
+county_deaths <- county_deaths %>%
+  filter(logDeathsPC != -Inf)
+
+county_deaths <- county_deaths %>%
+  as.numeric(as.character(c(POVALL_2018, CI90LBAll_2018, CI90UBALL_2018, POV017_2018, CI90LB017_2018, CI90UB017_2018, POV517_2018, CI90LB517_2018, CI90UB517_2018, MEDHHINC_2018, CI90LBINC_2018, CI90UBINC_2018)))
+
+full_model <- lm(logDeathsPC ~ cases + deaths + Rural.urban_Continuum_Code_2003 + Urban_Influence_Code_2003 +       Rural.urban_Continuum_Code_2013 + Urban_Influence_Code_2013 + as.numeric(POVALL_2018) + CI90LBAll_2018 +  CI90UBALL_2018 + PCTPOVALL_2018 + CI90LBALLP_2018 + CI90UBALLP_2018 + POV017_2018 + CI90LB017_2018 + CI90UB017_2018 + PCTPOV017_2018 + CI90LB017P_2018 + CI90UB017P_2018 + POV517_2018 + CI90LB517_2018 + CI90UB517_2018 + PCTPOV517_2018 + CI90LB517P_2018 + CI90UB517P_2018 + MEDHHINC_2018 + CI90LBINC_2018 + CI90UBINC_2018 + pop_2015 + num_white + num_black + num_hispanic + num_asian + num_other + num_nonwhite + perc_white + perc_black + perc_hispanic + perc_nonwhite + total_deaths + deathsPC, data = county_deaths)
+
+kable(tidy(full_model, format = "markdown"), digits = 4)
+```
+
+
+```{r model_select}
+gbmodel_aug <- lm(data = movies, log_gb_rate ~ runtime + star_rating + log_num_user_star +
+              + log_num_user_reviews_imdb + num_critic_reviews_imdb + movie_rating +
+                  release_month + release_year + Action + Biography + Animation + Horror + Drama + Crime + Comedy + Adventure + Family + Fantasy + SciFi + Musical + Romance + Thriller + Mystery + Western + History + War + Music + Sport)
+kable(tidy(gbmodel_aug, format = "markdown"), digits = 4)
+model <- step(gbmodel_aug, direction = "backward")
+```
+
+Final linear regression model
+
 ### Testing Our Assumptions
 
+```{r final-model}
+final <- lm(data = movies, log_gb_rate ~ runtime + star_rating + log_num_user_star + log_num_user_reviews_imdb + movie_rating + Action + Horror + Drama + Crime + Adventure + SciFi + Romance + Western + History + Sport)
+kable(tidy(final, format = "markdown"), digits = 4)
+```
+
+Above is the output of our final model, following the use of backwards selection.
+
+```{r resid-plots}
+movies <- movies %>% 
+  mutate(predicted = predict.lm(final), residuals = resid(final))
+
+resid1 <- ggplot(data = movies, aes(x=predicted, y=residuals)) + 
+  geom_point(size = 0.2) + 
+  geom_hline(yintercept=0,color="red") +
+  labs(title="Residuals vs. Predicted Values") +
+  theme_bw()
+
+resid2 <- ggplot(data = movies, aes(x = runtime, y = residuals)) + 
+  geom_point(size = 0.2) + 
+  geom_hline(yintercept=0,color="red") +
+  labs(title="Residuals vs. Runtime") +
+  theme_bw()
+
+resid3 <- ggplot(data = movies, aes(x = star_rating, y = residuals)) + 
+  geom_point(size = 0.2) + 
+  geom_hline(yintercept=0,color="red") +
+  labs(title="Residuals vs. Star Rating") +
+  theme_bw()
+
+resid4 <- ggplot(data = movies, aes(x = log_num_user_star, y = residuals)) + 
+  geom_point(size = 0.2) + 
+  geom_hline(yintercept=0,color="red") +
+  labs(title="Residuals vs. Log of the Number of User Star Ratings") +
+  theme_bw()
+
+resid5 <- ggplot(data = movies, aes(x=log_num_user_reviews_imdb, y=residuals)) + 
+  geom_point(size = 0.2) + 
+  geom_hline(yintercept=0,color="red") +
+  labs(title="Residuals vs. Log of the Number of User Reviews") +
+  theme_bw()
+
+resid6 <- ggplot(data=movies,aes(x=movie_rating,y=residuals)) + 
+  geom_boxplot() + 
+  geom_hline(yintercept=0,color="red") +
+  labs(title="Residuals vs. Movie Rating",
+       x = "Region", 
+       y="Residuals") +
+  theme_bw()
+
+resid1
+grid.arrange(resid2, resid3, resid4) 
+grid.arrange(resid5, resid6)
+```
+
+```{r normality}
+ggplot(movies, aes(residuals)) +
+  geom_histogram(bins = 15) +
+  labs(title="Frequency of Residuals",
+       x = "Residuals",
+       y = "Frequency") +
+  theme_bw()
+
+
+ggplot(movies,aes(sample = residuals)) +
+  stat_qq() +
+  stat_qq_line() +
+  labs(title = "Normal QQ Plot of Residuals") +
+  theme_bw()
+
+```
+
 ### Multicollinearity
+```{r multicolvif}
+vif(final)
+```
+
+<!-- We see from our variance inflation factor calculation that there are no values greater than 10 (and thus indicate multicolinearity) except for factors within the movie_rating variable. This is alright as we sometimes expect factors of a single variable to correlate with each other. For the most part, we do not have evidence of multicollinearity and shall continue with our analysis.  -->
 
 ### Interaction Effects
+```{r interaction, warning = FALSE}
+interaction1 <- lm(data = movies, log_gb_rate ~ runtime + star_rating + log_num_user_star + log_num_user_reviews_imdb + movie_rating + star_rating*runtime + log_num_user_star*runtime + log_num_user_reviews_imdb*runtime + movie_rating*runtime)
+kable(anova(final, interaction1, test = "Chisq"), format = "markdown")
+
+interaction2 <- lm(data = movies, log_gb_rate ~ runtime + star_rating + log_num_user_star + log_num_user_reviews_imdb + movie_rating + star_rating*runtime + log_num_user_star*star_rating + log_num_user_reviews_imdb*star_rating + movie_rating*star_rating)
+kable(anova(final, interaction2, test = "Chisq"), format = "markdown")
+```
+
+Because the p-value is larger than 0.05 for interactions 1 and 2, there seems to be no significant interaction effect with runtime and star_rating. We will continue with our selected model.
 
 ### Influential Points
+We should assess any possible inflential points in our model to make sure that there are no points that have a disproportionally large effect on our overall model. We will do so by assessing the leverage of each point on the model.
+```{r augmenting}
+augmented_model <- augment(gbmodel_aug)
+
+leverage_threshold <- 2*(5+1)/(nrow(augmented_model))
+
+high_lev <- augmented_model %>%
+  filter(.hat > leverage_threshold)
+
+augmented_model <- augmented_model %>%
+  mutate(obs_num = 1:nrow(augmented_model))
+
+ggplot(data = augmented_model, aes(x = obs_num,y = .hat)) + 
+  geom_point(alpha = 0.7) + 
+  geom_hline(yintercept = leverage_threshold,color = "red")+
+  labs(x = "Observation Number",y = "Leverage",title = "Leverage") +
+  geom_text(aes(label=ifelse(.hat > leverage_threshold, as.character(obs_num), "")), nudge_x = 4)
+```
+
+We see that there are many values above 2 times the average leverage of our model so we shall go on to analyze the cooks distance of these specific values to make sure that they are not truly overly influential.
+
+```{r cooksdanalyze}
+high_lev %>%
+  filter(.cooksd > 1)
+movies
+```
+
+We see that there are no observations involved in our model that have a cooks distance of greater than 1. Thus, we have no overly influential points and may continue with the rest of our analysis. 
 
 ### Interpreting The Coefficients
+
+<!-- The coefficients for our model all relate to the response variable which is the log of the gross income for a movie divided by its budget. We will call this the success ratio through the rest of the interpretation.  -->
+
+<!-- The coeffficient for the `log_num_user_star` variable is 0.3342, because this variable is a log as well as our response variable, this means that for every increase by a factor of x of stars from user reviews for movie, we expect the success ratio to increase by that same factor of x. -->
+
+
 
 
 # Section 3: Conclusion
