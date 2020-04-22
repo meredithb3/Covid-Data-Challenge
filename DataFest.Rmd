@@ -182,6 +182,7 @@ county_deaths <- data %>%
   group_by(fips) %>%
   mutate(total_deaths = sum(deaths)) %>%
   mutate(deathsPC = total_deaths/pop_2015) %>%
+  mutate(logDeathsPC = log(deathsPC)) %>%
   filter(date == "2020-04-15")
 
 county_deaths %>%
@@ -190,7 +191,7 @@ county_deaths %>%
   head(10)
 
 county_deaths_map <- plot_usmap(regions = "counties", data = county_deaths, values = "total_deaths",
-                                color = "black", size=0.01)
+                                color = "black", size=0.05)
 
  
 county_deaths_map <- county_deaths_map + 
@@ -201,11 +202,20 @@ county_deaths_map <- county_deaths_map +
 county_deaths_map
 
 
-county_deaths_map <- plot_usmap("counties", data = county_deaths, values = "deathsPC", color = "black", size=0.01)
+county_deaths_map <- plot_usmap("counties", data = county_deaths, values = "deathsPC", color = "black", size=0.05)
 
 county_deaths_map <- county_deaths_map + 
               scale_fill_gradient(low = "white", high = "limegreen", name = "Deaths per Capita") +
               labs(title = "Deaths per Capita by County on April 15, 2020") + 
+              theme(legend.position = "right")
+
+county_deaths_map
+
+county_deaths_map <- plot_usmap("counties", data = county_deaths, values = "logDeathsPC", color = "black", size = 0.05)
+
+county_deaths_map <- county_deaths_map + 
+              scale_fill_gradient(low = "white", high = "limegreen", name = "log(Deaths per Capita)") +
+              labs(title = "Log Deaths per Capita by County on April 15, 2020") + 
               theme(legend.position = "right")
 
 county_deaths_map
@@ -224,38 +234,46 @@ county_cases_map <- county_cases_map +
 county_cases_map
 ```
 
-# everything below needs to be checked 
 
-We should look at histograms of both cases and log(cases) to see if the apparent more even spread of log(cases) is normal compared to regular cases
 
-```{r cases-hist}
+```{r deaths-hist}
 county_deaths %>%
-  ggplot(mapping = aes(x = deaths)) +
-  geom_histogram() + 
-  labs(title = "Histogram of Number of Cases per County", x = "Number of Cases",
-       y = "# Counties with X Cases")
+  ggplot(mapping = aes(x = total_deaths)) +
+  geom_histogram(binwidth = 100) + 
+  labs(title = "Histogram of Number of Deaths per County", x = "Number of Deaths",
+       y = "# Counties with X Deaths")
 ```
 
 As we predicted, we see an incredible amount of right skewness in the distribution of deaths per county.
 
-```{r logcases-hist}
+```{r deathsPC-hist}
 county_deaths %>%
-  ggplot(mapping = aes(x = log(deaths))) +
-  geom_histogram() + 
-  labs(title = "Histogram of Number of log of # Cases per County", x = "Number of Cases",
-       y = "# Counties with log(X) Cases")
+  ggplot(mapping = aes(x = deathsPC)) +
+  geom_histogram(binwidth = 0.0005) + 
+  labs(title = "Histogram of Number of Deaths per Capita by County", x = "Number of Deaths/Capita",
+       y = "# Counties with X Deaths/Capita")
 ```
 
-This historam of the log(cases) per county shows much more evidence of normailty than the graph of just cases. It would be a much better response variable, however we should analyze some other options as well.
+There is still a lot of right skewness in the histogram of the number of deaths per capita. 
+
+```{r logcases-hist, warning = FALSE}
+county_deaths %>%
+  ggplot(mapping = aes(x = logDeathsPC)) +
+  geom_histogram(binwidth = 0.38) + 
+  labs(title = "Histogram of Number of log of Deaths per Capita by County", x = "log(Deaths/Capita)",
+       y = "# Counties with log(Deaths/Capita)")
+```
+
+This historam of the log(Deaths/Capita) by county shows much more evidence of normailty than the graph of just cases. It would be a much better response variable.
 
 Another possible option to analyze as a response would be the number of cases per capita of a county. This may work better as it would correlate significantly less with population as we have "accounted" for this already in the response.
 
-
-We see a much more even distribution using the log of cases per capita. It is important to note that many counties appear as grey in this map; these counties have zero cases and thus the log of them returns the value of negative infinity causing this. We can remove or standardize them in our later analysis. The histogram of the log of cases per capita is very normal which would be perfect for analysis.
+We, however, see a much more even distribution using the log of deaths per capita. It is important to note that many counties appear as grey in this map; these counties have zero cases and thus the log of them returns the value of negative infinity causing this. 
+The histogram of the log of cases per capita is very normal which would be perfect for analysis.
 
 ### Description of the Response Variable
 
-The response variable for use in the model will be log of cases per capita. As shown above, this version of the response variable deals with some of the skewness in cases per capita. 
+The response variable for use in the model will be log of deaths per capita. As shown above, this version of the response variable deals with some of the skewness in deaths per capita. 
 
 ### Descriptions of the Regressors
 
