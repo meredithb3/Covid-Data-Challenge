@@ -29,7 +29,9 @@ covidData <- read.csv("coronacounties.csv")
 povertyData <- read.csv("PovertyEstimates.csv")
 populationData <- usmap::countypop
 populationData$fips <- as.integer(populationData$fips)
-demoData <- read.csv("stco-mr2010-1.csv")
+demoData1 <- read.csv("stco-mr2010-1.csv")
+demoData2 <- read.csv("stco-mr2010_mt_wy.csv")
+demoData <- rbind(demoData1, demoData2)
 ```
 
 
@@ -147,7 +149,7 @@ state_cases <- data %>%
 cases_map <- plot_usmap(data = state_cases, values = "total_deaths", labels = TRUE, label_color = "gray", color = "red")
 
 cases_map <- cases_map + 
-              scale_fill_gradient(low = "white", high = "#CB454A", name = "Cases") +
+              scale_fill_gradient(low = "white", high = "#CB454A", name = "Deaths") +
               labs(title = "Deaths by State on April 15, 2020") + 
               labs(subtitle = "Most deaths are concentrated in New York State.") + 
               theme(legend.position = "right")
@@ -162,14 +164,13 @@ Need to add histograms for the response variable we choose, the predictors we ch
 state_capita_deaths <- data %>%
   filter(date == "2020-04-15") %>%
   group_by(state) %>%
-  summarise(deaths_per_capita = sum(cases)/sum(pop_2015))
+  summarise(deaths_per_capita = sum(deaths)/sum(pop_2015))
 
 capita_deaths_map <- plot_usmap(data = state_capita_deaths, values = "deaths_per_capita", labels = TRUE, label_color = "gray", color = "red")
 
 capita_deaths_map <- capita_deaths_map + 
               scale_fill_gradient(low = "white", high = "#CB454A", name = "Deaths Per Capita") +
               labs(title = "Deaths per Capita by State on April 15, 2020") + 
-              labs(subtitle = "Most Concentrated in New York State.") + 
               theme(legend.position = "right")
 
 capita_deaths_map
@@ -178,34 +179,33 @@ capita_deaths_map
 
 ```{r deaths-plot-county, warning=FALSE}
 county_deaths <- data %>%
+  group_by(fips) %>%
+  mutate(total_deaths = sum(deaths)) %>%
+  mutate(deathsPC = total_deaths/pop_2015) %>%
   filter(date == "2020-04-15")
 
-county_deaths <- merge(x = populationData, y = county_deaths, by = "fips", all = TRUE)
+county_deaths %>%
+  select(state, county.x, deathsPC) %>%
+  arrange(desc(deathsPC)) %>%
+  head(10)
 
-county_deaths$pop_2015 <- county_deaths$pop_2015.x
+county_deaths_map <- plot_usmap(regions = "counties", data = county_deaths, values = "total_deaths",
+                                color = "black", size=0.01)
 
-county_deaths$log_deaths <- log(county_deaths$deaths)
-county_deaths$deaths[is.na(county_deaths$deaths)] <- 0
-county_deaths$log_deaths[is.na(county_deaths$log_deaths) | is.infinite(county_deaths$log_deaths)] <- 0
-
-
-county_deaths_map <- plot_usmap("counties", data = county_deaths, values = "deaths", color = "red", size=0.01)
-
+ 
 county_deaths_map <- county_deaths_map + 
-              scale_fill_gradient(low = "white", high = "#CB454A", name = "Deaths") +
+              scale_fill_gradient(low = "white", high = "limegreen", name = "Deaths") +
               labs(title = "Deaths by County on April 15, 2020") + 
-              labs(subtitle = "Most deaths are concentrated in New York State.") + 
               theme(legend.position = "right")
 
 county_deaths_map
 
 
-county_deaths_map <- plot_usmap("counties", data = county_deaths, values = "log_deaths", color = "red", size=0.01)
+county_deaths_map <- plot_usmap("counties", data = county_deaths, values = "deathsPC", color = "black", size=0.01)
 
 county_deaths_map <- county_deaths_map + 
-              scale_fill_gradient(low = "white", high = "#CB454A", name = "Log Deaths") +
-              labs(title = "Log Deaths by County on April 15, 2020") + 
-              labs(subtitle = "Most deaths are concentrated in New York State.") + 
+              scale_fill_gradient(low = "white", high = "limegreen", name = "Deaths per Capita") +
+              labs(title = "Deaths per Capita by County on April 15, 2020") + 
               theme(legend.position = "right")
 
 county_deaths_map
@@ -217,12 +217,14 @@ plot_poverty_data <- merge(populationData, povertyData, by.x = 'fips', by.y = 'F
 county_cases_map <- plot_usmap("counties", data = plot_poverty_data, values = "PCTPOVALL_2018", color = "red", size=0.01)
 
 county_cases_map <- county_cases_map + 
-              scale_fill_gradient(low = "white", high = "#CB454A", name = "PCTPOVALL_2018") +
+              scale_fill_gradient(low = "white", high = "blue", name = "Percent in Poverty") +
               labs(title = "Poverty Level by County (2018 values)") + 
               theme(legend.position = "right")
 
 county_cases_map
 ```
+
+# everything below needs to be checked 
 
 We should look at histograms of both cases and log(cases) to see if the apparent more even spread of log(cases) is normal compared to regular cases
 
@@ -234,7 +236,7 @@ county_deaths %>%
        y = "# Counties with X Cases")
 ```
 
-As we predicted, we see an incredible amount of right skewness in the distribution of cases per county.
+As we predicted, we see an incredible amount of right skewness in the distribution of deaths per county.
 
 ```{r logcases-hist}
 county_deaths %>%
@@ -248,48 +250,6 @@ This historam of the log(cases) per county shows much more evidence of normailty
 
 Another possible option to analyze as a response would be the number of cases per capita of a county. This may work better as it would correlate significantly less with population as we have "accounted" for this already in the response.
 
-```{r percapita}
-county_deaths <- county_deaths %>%
-  mutate(casesPC = deaths/pop_2015)
-
-casesPC_map <- plot_usmap("counties", data = county_deaths, values = "casesPC", color = "red", size=0.01)
-
-casesPC_map <- casesPC_map + 
-              scale_fill_gradient(low = "white", high = "limegreen", name = "Deaths Per Capita") +
-              labs(title = "Cases per Capita (by county)") + 
-              theme(legend.position = "right")
-
-casesPC_map
-
-county_deaths %>%
-  ggplot(mapping = aes(x = casesPC)) +
-  geom_histogram(binwidth = 0.0001) + 
-  labs(title = "Histogram of Number of  Deaths/Capita per County", x = "Number of Deaths/Capita",
-       y = "# Counties with X Deaths per Capita")
-```
-
-Similarly to the map of cases per county, we see a large discrepancy between counties and may benefit from mapping the log of the cases per capita in order to better normalize the distribution. The histogram confirms this theory as it is majorly right skewed.
-
-```{r logcasesPC}
-county_deaths$log_casesPC <- log(county_deaths$casesPC)
-county_deaths$casesPC[is.na(county_deaths$casesPC)] <- 0
-county_deaths$log_casesPC[is.na(county_deaths$log_casesPC)] <- 0
-
-logcasesPC_map <- plot_usmap("counties", data = county_deaths, values = "log_casesPC", color = "red", size=0.01)
-
-logcasesPC_map <- logcasesPC_map + 
-              scale_fill_gradient(low = "white", high = "limegreen", name = "Log of Cases per Capita") +
-              labs(title = "Log of Cases per Capita (by county)") + 
-              theme(legend.position = "right")
-
-logcasesPC_map
-
-county_deaths %>%
-  ggplot(mapping = aes(x = log_casesPC)) +
-  geom_histogram(binwidth = 0.3) + 
-  labs(title = "Histogram of Number of log(Cases/Capita per County)", x = "Number of log(Cases/Capita)",
-       y = "# Counties with log(X) Cases per Capita")
-```
 
 We see a much more even distribution using the log of cases per capita. It is important to note that many counties appear as grey in this map; these counties have zero cases and thus the log of them returns the value of negative infinity causing this. We can remove or standardize them in our later analysis. The histogram of the log of cases per capita is very normal which would be perfect for analysis.
 
