@@ -30,9 +30,6 @@ povertyData <- read.csv("PovertyEstimates.csv")
 populationData <- usmap::countypop
 populationData$fips <- as.integer(populationData$fips)
 demoData <- read.csv("stco-mr2010-1.csv")
-
-
-
 ```
 
 
@@ -129,26 +126,6 @@ demographicsData['perc_nonwhite'] <- demographicsData$num_nonwhite/demoDfPopulat
 glimpse(demographicsData)
 
 data <- merge(covidData, povertyData, by.x = 'fips', by.y = 'FIPStxt')
-
-state_cases <- data %>%
-    filter(date == "2020-04-15") %>%
-    group_by(state) %>%
-    summarise(total_cases = sum(cases))
-
-county_cases <- data %>%
-    filter(date == "2020-04-15")
-
-county_cases <- merge(x = populationData, y = county_cases, by = "fips", all = TRUE)
-
-county_cases$log_cases <- log(county_cases$cases)
-county_cases$cases[is.na(county_cases$cases)] <- 0
-county_cases$log_cases[is.na(county_cases$log_cases)] <- 0
-
-county_cases <- county_cases %>%
-    mutate(casesPC = cases/pop_2015)
-county_cases$log_casesPC <- log(county_cases$casesPC)
-county_cases$casesPC[is.na(county_cases$casesPC)] <- 0
-county_cases$log_casesPC[is.na(county_cases$log_casesPC)] <- 0
 ```
 
 
@@ -250,9 +227,9 @@ county_cases_map
 We should look at histograms of both cases and log(cases) to see if the apparent more even spread of log(cases) is normal compared to regular cases
 
 ```{r cases-hist}
-county_cases %>%
-  ggplot(mapping = aes(x = cases)) +
-  geom_histogram(binwidth=600) + 
+county_deaths %>%
+  ggplot(mapping = aes(x = deaths)) +
+  geom_histogram() + 
   labs(title = "Histogram of Number of Cases per County", x = "Number of Cases",
        y = "# Counties with X Cases")
 ```
@@ -260,9 +237,9 @@ county_cases %>%
 As we predicted, we see an incredible amount of right skewness in the distribution of cases per county.
 
 ```{r logcases-hist}
-county_cases %>%
-  ggplot(mapping = aes(x = log(cases))) +
-  geom_histogram(binwidth = 0.5) + 
+county_deaths %>%
+  ggplot(mapping = aes(x = log(deaths))) +
+  geom_histogram() + 
   labs(title = "Histogram of Number of log of # Cases per County", x = "Number of Cases",
        y = "# Counties with log(X) Cases")
 ```
