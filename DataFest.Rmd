@@ -13,6 +13,7 @@ library(ggplot2)
 library(usmap)
 library(ggthemes)
 ```
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -109,11 +110,18 @@ create_fips <- function(ste, cnty){
   else{
     s <- as.character(ste)
   }
-  return(paste(s,c,sep="")[1])
+  return(as.integer(paste(s,c,sep="")[1]))
 }
 
 demographicsData['fips'] <- mapply(create_fips, demographicsData['STATE'], 
                                     demographicsData['COUNTY'])
+
+demoDfPopulation <- demographicsData['num_white'] + demographicsData['num_nonwhite'] 
+
+demographicsData['perc_white'] <- demographicsData$num_white/demoDfPopulation
+demographicsData['perc_black'] <- demographicsData$num_black/demoDfPopulation
+demographicsData['perc_hispanic'] <- demographicsData$num_hispanic/demoDfPopulation
+demographicsData['perc_nonwhite'] <- demographicsData$num_nonwhite/demoDfPopulation
 
 glimpse(demographicsData)
 ```
@@ -126,6 +134,7 @@ Thus, the FIPS variable is a good variable by which to join these 2 datasets:
 ```{r join}
 data <- merge(covidData, povertyData, by.x = 'fips', by.y = 'FIPStxt')
 data <- merge(data, populationData, by.x = 'fips', by.y = 'fips')
+data <- merge(data, demographicsData, by.x = 'fips', by.y = 'fips')
 glimpse(data)
 ```
 
