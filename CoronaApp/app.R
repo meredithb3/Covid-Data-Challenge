@@ -234,8 +234,15 @@ ui <- dashboardPage(skin = "purple",
             #analysis tab contents
             tabItem(tabName = "analysis",
                     fluidRow(
-                        box(title = "box1analysis", status = "primary", solidHeader = TRUE,
-                            
+                        
+                        box(title = "Assumption 1: Linearity", status = "success", solidHeader = TRUE,
+                            "We can check the linearity assumption by graphing the response variable against all the predictor variables within our model. ",
+                            selectInput("predictor","Predictor Variable:",
+                                        choices = list("log(cases)", "Rural-Urban Continuum Code", 
+                                                    "Percent in Poverty", "log(Population)", "Percent White",
+                                                    "Percent Black")),
+                            plotOutput("pVr"),
+                            textOutput("pVrTxt")
                         )
                     )
             ),
@@ -338,6 +345,73 @@ server <- function(input, output) {
             kable("html",digits = 7) %>%
             kable_styling()
     })
+    output$pVr <- renderPlot({
+        if(input$predictor == "log(cases)") {
+            ggplot(data = county_deaths, aes(x = logCases, y = logDeathsPC)) +
+                geom_point(color = "black") +
+                labs(title = "Log Deaths/Capita vs Log Cases", y = "Log Deaths/Capita", x = "Log Cases")
+        }
+        else
+        if(input$predictor == "Rural-Urban Continuum Code") {
+            ggplot(data = county_deaths, aes(x = Rural.urban_Continuum_Code_2013, y = logDeathsPC)) +
+                geom_point(color = "black") +
+                labs(title = "Log Deaths/Capita vs Log Cases", y = "Log Deaths/Capita", x = "Log Cases")
+        }
+        else
+        if(input$predictor == "Percent in Poverty") {
+            ggplot(data = county_deaths, aes(x = PCTPOVALL_2018, y = logDeathsPC)) +
+                geom_point(color = "black") +
+                labs(title = "Log Deaths/Capita vs Log Cases", y = "Log Deaths/Capita", x = "Log Cases")
+        }
+        else
+        if(input$predictor == "log(Population)"){
+        ggplot(data = county_deaths, aes(x = log_pop_2015, y = logDeathsPC)) +
+            geom_point(color = "black") +
+            labs(title = "Log Deaths/Capita vs Log Population (2015)", y = "Log Deaths/Capita", 
+                 x = "Log Population (2015)")
+        }
+        else
+        if(input$predictor == "Percent White"){
+            ggplot(data = county_deaths, aes(x = perc_white, y = logDeathsPC)) +
+                geom_point(color = "black") +
+                labs(title = "Log Deaths/Capita vs Log Population (2015)", y = "Log Deaths/Capita", 
+                     x = "Log Population (2015)")
+        }
+        else
+        if(input$predictor == "Percent Black"){
+            ggplot(data = county_deaths, aes(x = perc_black, y = logDeathsPC)) +
+                geom_point(color = "black") +
+                labs(title = "Log Deaths/Capita vs Log Population (2015)", y = "Log Deaths/Capita", 
+                     x = "Log Population (2015)")
+        }
+    })
+    output$pVrTxt <- renderText({
+        if(input$predictor == "log(cases)") {
+            "From the graph above, we can see that there is a slightly positive association between log deaths per capita and the log number of cases. We would expect this, as more cases would likely contribute to more deaths per capita. There are no obvious concerns with linearity here, although the data is sort of spread out in a slight backwards fan. "
+        }
+        else
+            if(input$predictor == "Rural-Urban Continuum Code") {
+                "From the boxplots above, there appears to be a slight positive linear assoication in log deaths per capita amongst the different rural-urban continuum codes. Since this is a categorical variable, it becomes a bit harder for us to distinguish any glaring concerns with linearity."
+            }
+        else
+            if(input$predictor == "Percent in Poverty") {
+                "From the graph above, we can see that there is a very slightly positive association between log deaths per capita and the percent poverty in 2018. We would expect this, as a higher percent of people in poverty would likely contribute to more deaths per capita. There are no obvious concerns with linearity here, although the linear association is very weak."
+            }
+        else
+            if(input$predictor == "log(Population)"){
+               "From the graph above, we can see that there is a negative linear association between log deaths per capita and the log of population in 2015. This is interesting because it implies that an increase in log population correlates with a decrease in log deaths per capita. There are no obvious concerns with linearity here. "
+            }
+        else
+            if(input$predictor == "Percent White"){
+                "Both the above graphs of specific percents of the population appear to violate the linearity assumption. This makes sense, as we saw in their distributions in the Exploratory Data Analysis that their initial distributions were skewed and not fixed by a transformation. Thus, we can proceed with this analysis with caution."
+            }
+        else
+            if(input$predictor == "Percent Black"){
+                "Both the above graphs of specific percents of the population appear to violate the linearity assumption. This makes sense, as we saw in their distributions in the Exploratory Data Analysis that their initial distributions were skewed and not fixed by a transformation. Thus, we can proceed with this analysis with caution."
+            }
+    })
+    
+    
     
 }
 
