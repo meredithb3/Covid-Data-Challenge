@@ -146,9 +146,26 @@ ui <- dashboardPage(skin = "purple",
             #eda tab contents
             tabItem(tabName = "eda",
                     fluidRow(
-                        box(title = "edabox", status = "primary", solidHeader = TRUE,
-                            
-                        )
+                        box(title = "Deaths per Capita Map", status = "primary", solidHeader = TRUE, height = 520,
+                            plotOutput("countyDPC"), 
+                            "Looking at our plot of deaths per capita by county, we see that there are some 
+                            counties (namely in New York, Louisiana, and Michigan) that have relatively much
+                            larger deaths per capita than most others."),
+                        box(title = "Deaths per Capita Histogram", status = "primary", solidHeader = TRUE, height = 520,
+                            plotOutput("histCDPC"),
+                            "The histogram of deaths per capita by county confirms this as it has extreme right skew.
+                            We should analyze the log of this variable to see if it has more even spread.", br()),
+                        box(title = "Log Deaths per Capita Map", status = "warning", solidHeader = TRUE, height = 530,
+                            plotOutput("countyLDPC"),
+                            "Looking at this new plot of the log of deaths per capita by county, we see much more even 
+                            spread of values. We should note that counties in black have zero deaths and thus we will 
+                            only analyze counties with deaths as we cannot draw conclusions for counties that have not
+                            experienced COVID-19 outbreaks."),
+                        box(title = "Log Deaths per Capita Histogram", status = "warning", solidHeader = TRUE, height = 530,
+                            plotOutput("histLDPC"),
+                            "The histogram of the log of deaths per capita by county appears relatively nornal and symmetric.
+                            This is in agreement with the more even spread of counties affected in the map to the right and 
+                            will likely be good for modeling through our analysis portion.")
                     )
             ),
             
@@ -207,6 +224,40 @@ server <- function(input, output) {
         priviliges and resources. Using our analysis, we will hopefully be able to analyze which characteristics of a 
         community (we will treat counties as the 'community' level in question) lead to a higher death rate and thus 
         unequal impact."
+    })
+    output$countyDPC <- renderPlot({
+        county_deaths_map <- plot_usmap("counties", data = county_deaths, values = "deathsPC", color = "black", size=0.05)
+        
+        county_deaths_map <- county_deaths_map + 
+            scale_fill_gradient(low = "white", high = "limegreen", name = "Deaths per Capita") +
+            labs(title = "Deaths per Capita by County on April 15, 2020") + 
+            theme(legend.position = "right")
+        
+        county_deaths_map
+    })
+    output$histCDPC <- renderPlot({
+        county_deaths %>%
+            ggplot(mapping = aes(x = deathsPC)) +
+            geom_histogram(binwidth = 0.0005) + 
+            labs(title = "Histogram of Number of Deaths per Capita by County", x = "Number of Deaths/Capita",
+                 y = "# Counties with X Deaths/Capita")
+    })
+    output$countyLDPC <- renderPlot({
+        county_deaths_map <- plot_usmap("counties", data = county_deaths, values = "logDeathsPC", color = "black", size = 0.05)
+        
+        county_deaths_map <- county_deaths_map + 
+            scale_fill_gradient(low = "white", high = "limegreen", name = "log(Deaths per Capita)") +
+            labs(title = "Log Deaths per Capita by County on April 15, 2020") + 
+            theme(legend.position = "right")
+        
+        county_deaths_map
+    })
+    output$histLDPC <- renderPlot({
+        county_deaths %>%
+            ggplot(mapping = aes(x = logDeathsPC)) +
+            geom_histogram(binwidth = 0.38) + 
+            labs(title = "Histogram of Number of log of Deaths per Capita by County", x = "log(Deaths/Capita)",
+                 y = "# Counties with log(Deaths/Capita)")
     })
 }
 
