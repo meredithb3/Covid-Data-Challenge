@@ -15,6 +15,7 @@ library(ggthemes)
 library(skimr)
 library(broom)
 library(knitr) 
+library(rms)
 ```
 
 ```{r setup, include=FALSE}
@@ -298,7 +299,6 @@ The response variable for use in the model will be log of deaths per capita. As 
 
 The full model will predict from all variables other than those that identify the area which the data point represents, such as FIPS code, data, county, and state.
 
-
 # Section 2: Regression Analysis 
 ### Generating Our Model
 
@@ -310,8 +310,6 @@ county_deaths$POVALL_2018 <- as.numeric(gsub(",", "", county_deaths$POVALL_2018)
 county_deaths$POV017_2018 <- as.numeric(gsub(",", "", county_deaths$POV017_2018))
 county_deaths$POV517_2018 <- as.numeric(gsub(",", "", county_deaths$POV517_2018))
 county_deaths$MEDHHINC_2018 <- as.numeric(gsub(",", "", county_deaths$MEDHHINC_2018))
-
-any(is.na(county_deaths$Rural.urban_Continuum_Code_2003))
 
 county_deaths <- county_deaths %>%
   filter(!is.na(Rural.urban_Continuum_Code_2003))
@@ -328,13 +326,10 @@ full_model <- lm(logDeathsPC ~ cases + Rural.urban_Continuum_Code_2003 + Urban_I
 kable(tidy(full_model, format = "markdown"), digits = 4)
 ```
 
-
 ```{r model_select}
 model <- step(full_model, direction = "backward", trace = FALSE)
 kable(tidy(model, format = "markdown"), digits = 4)
 ```
-
-### Testing Our Assumptions
 
 ```{r final-model}
 final_model <- lm(logDeathsPC ~ cases + Rural.urban_Continuum_Code_2013 + 
@@ -346,92 +341,215 @@ kable(tidy(final_model, format = "markdown"), digits = 7)
 
 Above is the output of our final model, following the use of backwards selection.
 
-```{r resid-plots}
-movies <- movies %>% 
-  mutate(predicted = predict.lm(final), residuals = resid(final))
+### Distributions of Regressors
 
-resid1 <- ggplot(data = movies, aes(x=predicted, y=residuals)) + 
-  geom_point(size = 0.2) + 
-  geom_hline(yintercept=0,color="red") +
-  labs(title="Residuals vs. Predicted Values") +
-  theme_bw()
-
-resid2 <- ggplot(data = movies, aes(x = runtime, y = residuals)) + 
-  geom_point(size = 0.2) + 
-  geom_hline(yintercept=0,color="red") +
-  labs(title="Residuals vs. Runtime") +
-  theme_bw()
-
-resid3 <- ggplot(data = movies, aes(x = star_rating, y = residuals)) + 
-  geom_point(size = 0.2) + 
-  geom_hline(yintercept=0,color="red") +
-  labs(title="Residuals vs. Star Rating") +
-  theme_bw()
-
-resid4 <- ggplot(data = movies, aes(x = log_num_user_star, y = residuals)) + 
-  geom_point(size = 0.2) + 
-  geom_hline(yintercept=0,color="red") +
-  labs(title="Residuals vs. Log of the Number of User Star Ratings") +
-  theme_bw()
-
-resid5 <- ggplot(data = movies, aes(x=log_num_user_reviews_imdb, y=residuals)) + 
-  geom_point(size = 0.2) + 
-  geom_hline(yintercept=0,color="red") +
-  labs(title="Residuals vs. Log of the Number of User Reviews") +
-  theme_bw()
-
-resid6 <- ggplot(data=movies,aes(x=movie_rating,y=residuals)) + 
-  geom_boxplot() + 
-  geom_hline(yintercept=0,color="red") +
-  labs(title="Residuals vs. Movie Rating",
-       x = "Region", 
-       y="Residuals") +
-  theme_bw()
-
-resid1
-grid.arrange(resid2, resid3, resid4) 
-grid.arrange(resid5, resid6)
+```{r cases}
+ggplot(data = county_deaths, aes(x = cases)) +
+  geom_histogram(color = "Black", fill = "Light Blue", bins = 20) + 
+  labs(title = "Distribution of Cases", x = "Cases", y = "Count")
 ```
 
-```{r normality}
-ggplot(movies, aes(residuals)) +
-  geom_histogram(bins = 15) +
-  labs(title="Frequency of Residuals",
-       x = "Residuals",
-       y = "Frequency") +
-  theme_bw()
-
-
-ggplot(movies,aes(sample = residuals)) +
-  stat_qq() +
-  stat_qq_line() +
-  labs(title = "Normal QQ Plot of Residuals") +
-  theme_bw()
-
+```{r rural-urban-code}
+ggplot(data = county_deaths, aes(x = as.factor(Rural.urban_Continuum_Code_2013))) +
+  geom_boxplot(color = "Black", fill = "Light Blue") + 
+  labs(title = "Distribution of Rural-Urban Continuum Code", x = "Code", y = "Count")
 ```
 
-### Multicollinearity
+```{r pct-pov-0-17}
+ggplot(data = county_deaths, aes(x = PCTPOV017_2018)) +
+  geom_histogram(color = "Black", fill = "Light Blue", bins = 20) + 
+  labs(title = "Distribution of Percent Poverty in Ages 0-17", x = "Percent Poverty", y = "Count")
+```
+
+```{r pct-pov-5-17}
+ggplot(data = county_deaths, aes(x = PCTPOV517_2018)) +
+  geom_histogram(color = "Black", fill = "Light Blue", bins = 20) + 
+  labs(title = "Distribution of Percent Poverty in Ages 5-17 in Families", x = "Percent Poverty",
+       y = "Count")
+```
+
+```{r median-househould-income}
+ggplot(data = county_deaths, aes(x = MEDHHINC_2018)) +
+  geom_histogram(color = "Black", fill = "Light Blue", bins = 30) + 
+  labs(title = "Distribution of Median Household Income (2018)", x = "Median Household Income (2018)",
+       y = "Count")
+```
+
+```{r population-2015}
+ggplot(data = county_deaths, aes(x = pop_2015)) +
+  geom_histogram(color = "Black", fill = "Light Blue", bins = 20) + 
+  labs(title = "Distribution of Population (2015)", x = "Population (2015)", y = "Count")
+```
+
+```{r num_asians}
+ggplot(data = county_deaths, aes(x = num_asian)) +
+  geom_histogram(color = "Black", fill = "Light Blue", bins = 20) + 
+  labs(title = "Distribution of Number of Asian Persons", x = "Number of Asian Persons", y = "Count")
+```
+
+```{r perc-white}
+ggplot(data = county_deaths, aes(x = perc_white)) +
+  geom_histogram(color = "Black", fill = "Light Blue", bins = 20) + 
+  labs(title = "Distribution of White Percent of Population ", x = "White Percent of Population", 
+       y = "Count")
+```
+
+```{r perc-black}
+ggplot(data = county_deaths, aes(x = perc_black)) +
+  geom_histogram(color = "Black", fill = "Light Blue", bins = 20) + 
+  labs(title = "Distribution of Black Percent of Population ", x = "Black Percent of Population", 
+       y = "Count")
+```
+
+The distributions for `cases`, `pop_2015`, `num_asian`, `perc_white`, and `perc_black` all appear to be extremely skewed, so they do not satisfy the normality condition. To correct this, we will try taking the log of each of these variables.
+
+```{r log-cases}
+ggplot(data = county_deaths, aes(x = log(cases))) +
+  geom_histogram(color = "Black", fill = "Light Blue", bins = 20) + 
+  labs(title = "Distribution of Log Cases", x = "Log Cases", y = "Count")
+```
+
+```{r log-population}
+ggplot(data = county_deaths, aes(x = log(pop_2015))) +
+  geom_histogram(color = "Black", fill = "Light Blue", bins = 20) + 
+  labs(title = "Distribution of Log Population (2015)", x = "Log Population (2015)", y = "Count")
+```
+
+```{r log-num_asians}
+ggplot(data = county_deaths, aes(x = log(num_asian))) +
+  geom_histogram(color = "Black", fill = "Light Blue", bins = 20) + 
+  labs(title = "Distribution of Log Number of Asian Persons", x = "Log Number of Asian Persons", y = "Count")
+```
+
+```{r log-perc-white}
+ggplot(data = county_deaths, aes(x = log(perc_white))) +
+  geom_histogram(color = "Black", fill = "Light Blue", bins = 20) + 
+  labs(title = "Distribution of Log White Percent of Population ", x = "Log White Percent of Population", 
+       y = "Count")
+```
+
+```{r perc-black}
+ggplot(data = county_deaths, aes(x = log(perc_black))) +
+  geom_histogram(color = "Black", fill = "Light Blue", bins = 20) + 
+  labs(title = "Distribution of Log Black Percent of Population ", x = "Log Black Percent of Population", 
+       y = "Count")
+```
+
+After these transformations, the `cases`, `pop_2015`, and `num_asian` variables are much more normally distributed. The `perc_white` and `perc_black` variables are still skewed when log transformed, so we will work with the untransformed versions of them, and mark their failure of this condition in our conclusion.
+
+### Predictor Vs Response
+
+```{r logdeathsPC-logcases}
+county_deaths <- county_deaths %>%
+  mutate(logCases = log(cases))
+
+ggplot(data = county_deaths, aes(x = logCases, y = logDeathsPC)) +
+  geom_point(color = "black") +
+  labs(title = "Log Deaths/Capita vs Log Cases", y = "Log Deaths/Capita", x = "Log Cases")
+```
+
+```{r logdeathsPC-code}
+ggplot(data = county_deaths, aes(x = as.factor(Rural.urban_Continuum_Code_2013), y = logDeathsPC)) +
+  geom_boxplot(color = "black", fill = "light blue") +
+  labs(title = "Log Deaths/Capita vs Rural-Urban Continuum Code", y = "Log Deaths/Capita", 
+       x = "Rural-Urban Continuum Code")
+```
+
+```{r logdeathsPC-pct-pov-0-17}
+ggplot(data = county_deaths, aes(x = PCTPOV017_2018, y = logDeathsPC)) +
+  geom_point(color = "black") +
+  labs(title = "Log Deaths/Capita vs Percent Poverty in Ages 0-17", y = "Log Deaths/Capita", 
+       x = "Percent Poverty in Ages 0-17")
+```
+        
+```{r logdeathsPC-pct-pov-5-17}
+ggplot(data = county_deaths, aes(x = PCTPOV517_2018, y = logDeathsPC)) +
+  geom_point(color = "black") +
+  labs(title = "Log Deaths/Capita vs Percent Poverty in Ages 5-17 in Families", y = "Log Deaths/Capita", 
+       x = "Percent Poverty in Ages 5-17 in Families")
+```        
+
+```{r logdeathsPC-medhhinc}
+ggplot(data = county_deaths, aes(x = MEDHHINC_2018, y = logDeathsPC)) +
+  geom_point(color = "black") +
+  labs(title = "Log Deaths/Capita vs Median Household Income (2018)", y = "Log Deaths/Capita", 
+       x = "Median Household Income (2018)")
+```   
+
+```{r logdeathsPC-logpopulation}
+county_deaths <- county_deaths %>%
+  mutate(log_pop_2015 = log(pop_2015))
+
+ggplot(data = county_deaths, aes(x = log_pop_2015, y = logDeathsPC)) +
+  geom_point(color = "black") +
+  labs(title = "Log Deaths/Capita vs Log Population (2015)", y = "Log Deaths/Capita", 
+       x = "Log Population (2015)")
+```
+
+```{r logdeathsPC-lognum_asian}
+county_deaths <- county_deaths %>%
+  mutate(log_num_asian = log(num_asian))
+
+ggplot(data = county_deaths, aes(x = log_num_asian, y = logDeathsPC)) +
+  geom_point(color = "black") +
+  labs(title = "Log Deaths/Capita vs Log Number of Asian Persons", y = "Log Deaths/Capita", 
+       x = "Log Number of Asian Persons")
+```
+
+```{r logdeathsPC-perc_white}
+ggplot(data = county_deaths, aes(x = perc_white, y = logDeathsPC)) +
+  geom_point(color = "black") +
+  labs(title = "Log Deaths/Capita vs White Percent of Population", y = "Log Deaths/Capita", 
+       x = "White Percent of Population")
+```  
+
+```{r logdeathsPC-perc_black}
+ggplot(data = county_deaths, aes(x = perc_black, y = logDeathsPC)) +
+  geom_point(color = "black") +
+  labs(title = "Log Deaths/Capita vs Black Percent of Population", y = "Log Deaths/Capita", 
+       x = "Black Percent of Population")
+```  
+
+After performing the transformations on 3 of the variables, the final model needs to be updated to reflect this:
+
+```{r final-model-2}
+final <- lm(logDeathsPC ~ logCases + Rural.urban_Continuum_Code_2013 + 
+                    PCTPOV017_2018 + PCTPOV517_2018 + MEDHHINC_2018 + 
+                    log_pop_2015 + log_num_asian + perc_white + perc_black, data = county_deaths)
+
+kable(tidy(final, format = "markdown"), digits = 7)
+```
+
+### Testing Our Assumptions
+
+#### Linearity
+
+#### Constant Variance
+
+#### Normality
+
+#### Independence
+
+### Checking Model Diagnostics
+
+#### Multicollinearity
 ```{r multicolvif}
 vif(final)
 ```
 
-<!-- We see from our variance inflation factor calculation that there are no values greater than 10 (and thus indicate multicolinearity) except for factors within the movie_rating variable. This is alright as we sometimes expect factors of a single variable to correlate with each other. For the most part, we do not have evidence of multicollinearity and shall continue with our analysis.  -->
+PROBLEM!
 
-### Interaction Effects
+#### Interaction Effects
 ```{r interaction, warning = FALSE}
-interaction1 <- lm(data = movies, log_gb_rate ~ runtime + star_rating + log_num_user_star + log_num_user_reviews_imdb + movie_rating + star_rating*runtime + log_num_user_star*runtime + log_num_user_reviews_imdb*runtime + movie_rating*runtime)
-kable(anova(final, interaction1, test = "Chisq"), format = "markdown")
 
-interaction2 <- lm(data = movies, log_gb_rate ~ runtime + star_rating + log_num_user_star + log_num_user_reviews_imdb + movie_rating + star_rating*runtime + log_num_user_star*star_rating + log_num_user_reviews_imdb*star_rating + movie_rating*star_rating)
-kable(anova(final, interaction2, test = "Chisq"), format = "markdown")
 ```
 
-Because the p-value is larger than 0.05 for interactions 1 and 2, there seems to be no significant interaction effect with runtime and star_rating. We will continue with our selected model.
+#### Influential Points
 
-### Influential Points
 We should assess any possible inflential points in our model to make sure that there are no points that have a disproportionally large effect on our overall model. We will do so by assessing the leverage of each point on the model.
+
 ```{r augmenting}
-augmented_model <- augment(gbmodel_aug)
+augmented_model <- augment(final)
 
 leverage_threshold <- 2*(5+1)/(nrow(augmented_model))
 
@@ -453,16 +571,11 @@ We see that there are many values above 2 times the average leverage of our mode
 ```{r cooksdanalyze}
 high_lev %>%
   filter(.cooksd > 1)
-movies
 ```
 
 We see that there are no observations involved in our model that have a cooks distance of greater than 1. Thus, we have no overly influential points and may continue with the rest of our analysis. 
 
 ### Interpreting The Coefficients
-
-<!-- The coefficients for our model all relate to the response variable which is the log of the gross income for a movie divided by its budget. We will call this the success ratio through the rest of the interpretation.  -->
-
-<!-- The coeffficient for the `log_num_user_star` variable is 0.3342, because this variable is a log as well as our response variable, this means that for every increase by a factor of x of stars from user reviews for movie, we expect the success ratio to increase by that same factor of x. -->
 
 
 
