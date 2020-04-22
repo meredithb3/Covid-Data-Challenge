@@ -134,6 +134,8 @@ demographicsData['perc_white'] <- demographicsData$num_white/demoDfPopulation
 demographicsData['perc_black'] <- demographicsData$num_black/demoDfPopulation
 demographicsData['perc_hispanic'] <- demographicsData$num_hispanic/demoDfPopulation
 demographicsData['perc_nonwhite'] <- demographicsData$num_nonwhite/demoDfPopulation
+demographicsData['perc_asian'] <- demographicsData$num_asian/demoDfPopulation
+demographicsData['perc_other'] <- demographicsData$num_other/demoDfPopulation
 
 glimpse(demographicsData)
 ```
@@ -316,12 +318,14 @@ county_deaths <- county_deaths %>%
 county_deaths <- county_deaths %>%
   filter(!is.na(Urban_Influence_Code_2003))
 
-full_model <- lm(logDeathsPC ~ cases + Rural.urban_Continuum_Code_2003 + Urban_Influence_Code_2003 
-                 + Rural.urban_Continuum_Code_2013 + Urban_Influence_Code_2013 + POVALL_2018 
-                 + PCTPOVALL_2018 + POV017_2018 + PCTPOV017_2018 + POV517_2018 + PCTPOV517_2018 
-                 + MEDHHINC_2018 + pop_2015 + num_white + num_black + num_hispanic + num_asian 
-                 + num_other + num_nonwhite + perc_white + perc_black + perc_hispanic 
-                 + perc_nonwhite, data = county_deaths)
+county_deaths$Rural.urban_Continuum_Code_2013 <- as.factor(county_deaths$Rural.urban_Continuum_Code_2013)
+
+full_model <- lm(logDeathsPC ~ cases + 
+                 Rural.urban_Continuum_Code_2013 + 
+                 PCTPOVALL_2018 + 
+                 + MEDHHINC_2018 + pop_2015 + perc_asian +
+                 perc_other + perc_white + perc_black +
+                   perc_hispanic + perc_nonwhite, data = county_deaths)
 
 kable(tidy(full_model, format = "markdown"), digits = 4)
 ```
@@ -333,8 +337,8 @@ kable(tidy(model, format = "markdown"), digits = 4)
 
 ```{r final-model}
 final_model <- lm(logDeathsPC ~ cases + Rural.urban_Continuum_Code_2013 + 
-                    PCTPOV017_2018 + PCTPOV517_2018 + MEDHHINC_2018 + 
-                    pop_2015 + num_asian + perc_white + perc_black, data = county_deaths)
+                    PCTPOVALL_2018 +
+                    pop_2015 + perc_white + perc_black, data = county_deaths)
 
 kable(tidy(final_model, format = "markdown"), digits = 7)
 ```
@@ -356,35 +360,16 @@ ggplot(data = county_deaths, aes(x = as.factor(Rural.urban_Continuum_Code_2013))
 ```
 
 ```{r pct-pov-0-17}
-ggplot(data = county_deaths, aes(x = PCTPOV017_2018)) +
+ggplot(data = county_deaths, aes(x = PCTPOVALL_2018)) +
   geom_histogram(color = "Black", fill = "Light Blue", bins = 20) + 
-  labs(title = "Distribution of Percent Poverty in Ages 0-17", x = "Percent Poverty", y = "Count")
+  labs(title = "Distribution of Percent Poverty", x = "Percent in Poverty", y = "Count")
 ```
 
-```{r pct-pov-5-17}
-ggplot(data = county_deaths, aes(x = PCTPOV517_2018)) +
-  geom_histogram(color = "Black", fill = "Light Blue", bins = 20) + 
-  labs(title = "Distribution of Percent Poverty in Ages 5-17 in Families", x = "Percent Poverty",
-       y = "Count")
-```
-
-```{r median-househould-income}
-ggplot(data = county_deaths, aes(x = MEDHHINC_2018)) +
-  geom_histogram(color = "Black", fill = "Light Blue", bins = 30) + 
-  labs(title = "Distribution of Median Household Income (2018)", x = "Median Household Income (2018)",
-       y = "Count")
-```
 
 ```{r population-2015}
 ggplot(data = county_deaths, aes(x = pop_2015)) +
   geom_histogram(color = "Black", fill = "Light Blue", bins = 20) + 
   labs(title = "Distribution of Population (2015)", x = "Population (2015)", y = "Count")
-```
-
-```{r num_asians}
-ggplot(data = county_deaths, aes(x = num_asian)) +
-  geom_histogram(color = "Black", fill = "Light Blue", bins = 20) + 
-  labs(title = "Distribution of Number of Asian Persons", x = "Number of Asian Persons", y = "Count")
 ```
 
 ```{r perc-white}
@@ -401,7 +386,7 @@ ggplot(data = county_deaths, aes(x = perc_black)) +
        y = "Count")
 ```
 
-The distributions for `cases`, `pop_2015`, `num_asian`, `perc_white`, and `perc_black` all appear to be extremely skewed, so they do not satisfy the normality condition. To correct this, we will try taking the log of each of these variables.
+The distributions for `cases`, `pop_2015`, `perc_white`, and `perc_black` all appear to be extremely skewed, so they do not satisfy the normality condition. To correct this, we will try taking the log of each of these variables.
 
 ```{r log-cases}
 ggplot(data = county_deaths, aes(x = log(cases))) +
@@ -413,12 +398,6 @@ ggplot(data = county_deaths, aes(x = log(cases))) +
 ggplot(data = county_deaths, aes(x = log(pop_2015))) +
   geom_histogram(color = "Black", fill = "Light Blue", bins = 20) + 
   labs(title = "Distribution of Log Population (2015)", x = "Log Population (2015)", y = "Count")
-```
-
-```{r log-num_asians}
-ggplot(data = county_deaths, aes(x = log(num_asian))) +
-  geom_histogram(color = "Black", fill = "Light Blue", bins = 20) + 
-  labs(title = "Distribution of Log Number of Asian Persons", x = "Log Number of Asian Persons", y = "Count")
 ```
 
 ```{r log-perc-white}
@@ -456,25 +435,12 @@ ggplot(data = county_deaths, aes(x = as.factor(Rural.urban_Continuum_Code_2013),
 ```
 
 ```{r logdeathsPC-pct-pov-0-17}
-ggplot(data = county_deaths, aes(x = PCTPOV017_2018, y = logDeathsPC)) +
+ggplot(data = county_deaths, aes(x = PCTPOVALL_2018, y = logDeathsPC)) +
   geom_point(color = "black") +
-  labs(title = "Log Deaths/Capita vs Percent Poverty in Ages 0-17", y = "Log Deaths/Capita", 
-       x = "Percent Poverty in Ages 0-17")
+  labs(title = "Log Deaths/Capita vs Percent Poverty", y = "Log Deaths/Capita", 
+       x = "Percent in Poverty")
 ```
-        
-```{r logdeathsPC-pct-pov-5-17}
-ggplot(data = county_deaths, aes(x = PCTPOV517_2018, y = logDeathsPC)) +
-  geom_point(color = "black") +
-  labs(title = "Log Deaths/Capita vs Percent Poverty in Ages 5-17 in Families", y = "Log Deaths/Capita", 
-       x = "Percent Poverty in Ages 5-17 in Families")
-```        
 
-```{r logdeathsPC-medhhinc}
-ggplot(data = county_deaths, aes(x = MEDHHINC_2018, y = logDeathsPC)) +
-  geom_point(color = "black") +
-  labs(title = "Log Deaths/Capita vs Median Household Income (2018)", y = "Log Deaths/Capita", 
-       x = "Median Household Income (2018)")
-```   
 
 ```{r logdeathsPC-logpopulation}
 county_deaths <- county_deaths %>%
@@ -486,15 +452,6 @@ ggplot(data = county_deaths, aes(x = log_pop_2015, y = logDeathsPC)) +
        x = "Log Population (2015)")
 ```
 
-```{r logdeathsPC-lognum_asian}
-county_deaths <- county_deaths %>%
-  mutate(log_num_asian = log(num_asian))
-
-ggplot(data = county_deaths, aes(x = log_num_asian, y = logDeathsPC)) +
-  geom_point(color = "black") +
-  labs(title = "Log Deaths/Capita vs Log Number of Asian Persons", y = "Log Deaths/Capita", 
-       x = "Log Number of Asian Persons")
-```
 
 ```{r logdeathsPC-perc_white}
 ggplot(data = county_deaths, aes(x = perc_white, y = logDeathsPC)) +
@@ -514,11 +471,23 @@ After performing the transformations on 3 of the variables, the final model need
 
 ```{r final-model-2}
 final <- lm(logDeathsPC ~ logCases + Rural.urban_Continuum_Code_2013 + 
-                    PCTPOV017_2018 + PCTPOV517_2018 + MEDHHINC_2018 + 
-                    log_pop_2015 + log_num_asian + perc_white + perc_black, data = county_deaths)
+                    PCTPOVALL_2018 +
+                    log_pop_2015 + perc_white + perc_black, data = county_deaths)
 
-kable(tidy(final, format = "markdown"), digits = 7)
+kable(tidy(final, format = "markdown", exponentiate = TRUE), digits = 7)
 ```
+
+Now that we have determined that our model is satisfactory, we can begin to provide an interpretation of the model. We see, unsurprisingly, that the number of cases has a high correlation with the number of deaths per capita in a county. However, looking at the p-values of the model coefficients we also see that there is strong evidence that there is a correlation between certain urban continuum codes, or how large and urbanized a county is, and how many deaths per capita there are in the county. Interestingly, the two codes with the strongest evidence (or the lowest p-value) to be correlated with the deaths per capita in a county are for counties with a code 9 or "less than 2,500 urban population, not adjacent to a metro area" and for counties with a code 3 or "counties in metro areas of fewer than 250,000 population."
+
+A larger urban continuum code indicates that a county is less urban and less populated.
+
+We will also interpret the model coefficients from our model. We expect that as the log number of cases increases by 1, we expect the number of deaths per capita in the county to increase by 2.255 on average. Additionally, we expect that as the log population increases by 1, we expect the the number of deaths per capita to increase by 1.3779. Next, we expect that as the percentage of white inhabitants in a county increases by 1 percent, the deaths per capita in the county will increase by 0.013 on average. Meanwhile, as the percentage of black inhabitants in a county increases by 1 percent, the deaths per capita in the county will increase by 0.0077 on average. If the percentage of individuals in poverty in a county increases by 1 percent in a county, we expect the deaths per capita in the county to increase by 0.0101 on average. In the following paragraph, we will provide interpretation for the coefficients corresponding to the rural urban continuum codes generated by the model.
+
+A key of all of the rural urban continuum codes can be found at https://seer.cancer.gov/seerstat/variables/countyattribs/ruralurban.html.
+In general, as the code number increases, a county is smaller and less urban.
+
+The baseline rural urban continuum code for our analysis is a code 1. If a county has a rural urban continuum code of 2, we expect there to be 0.8997374 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 3, we expect there to be 0.7460708 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 4, we expect there to be 0.8093420 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 5, we expect there to be 0.8770798 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 6, we expect there to be 0.9905803 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 7, we expect there to be 1.1904460 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 8, we expect there to be 1.4139911 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 9, we expect there to be 1.8102279 deaths per capita more than counties with a baseline code on average. This trend seems to indicate that as a county becomes less urban, the average deaths per capita seems to increase.i
+
 
 ### Testing Our Assumptions
 
@@ -577,7 +546,7 @@ We see that there are no observations involved in our model that have a cooks di
 
 ### Interpreting The Coefficients
 
-
+Now that we have determined that our model is satisfactory, we can begin to provide an interpretation of the model. 
 
 
 # Section 3: Conclusion
