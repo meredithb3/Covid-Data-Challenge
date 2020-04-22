@@ -306,30 +306,42 @@ The full model will predict from all variables other than those that identify th
 county_deaths <- county_deaths %>%
   filter(logDeathsPC != -Inf)
 
-county_deaths <- county_deaths %>%
-  as.numeric(as.character(c(POVALL_2018, CI90LBAll_2018, CI90UBALL_2018, POV017_2018, CI90LB017_2018, CI90UB017_2018, POV517_2018, CI90LB517_2018, CI90UB517_2018, MEDHHINC_2018, CI90LBINC_2018, CI90UBINC_2018)))
+county_deaths$POVALL_2018 <- as.numeric(gsub(",", "", county_deaths$POVALL_2018))
+county_deaths$POV017_2018 <- as.numeric(gsub(",", "", county_deaths$POV017_2018))
+county_deaths$POV517_2018 <- as.numeric(gsub(",", "", county_deaths$POV517_2018))
+county_deaths$MEDHHINC_2018 <- as.numeric(gsub(",", "", county_deaths$MEDHHINC_2018))
 
-full_model <- lm(logDeathsPC ~ cases + deaths + Rural.urban_Continuum_Code_2003 + Urban_Influence_Code_2003 +       Rural.urban_Continuum_Code_2013 + Urban_Influence_Code_2013 + as.numeric(POVALL_2018) + CI90LBAll_2018 +  CI90UBALL_2018 + PCTPOVALL_2018 + CI90LBALLP_2018 + CI90UBALLP_2018 + POV017_2018 + CI90LB017_2018 + CI90UB017_2018 + PCTPOV017_2018 + CI90LB017P_2018 + CI90UB017P_2018 + POV517_2018 + CI90LB517_2018 + CI90UB517_2018 + PCTPOV517_2018 + CI90LB517P_2018 + CI90UB517P_2018 + MEDHHINC_2018 + CI90LBINC_2018 + CI90UBINC_2018 + pop_2015 + num_white + num_black + num_hispanic + num_asian + num_other + num_nonwhite + perc_white + perc_black + perc_hispanic + perc_nonwhite + total_deaths + deathsPC, data = county_deaths)
+any(is.na(county_deaths$Rural.urban_Continuum_Code_2003))
+
+county_deaths <- county_deaths %>%
+  filter(!is.na(Rural.urban_Continuum_Code_2003))
+county_deaths <- county_deaths %>%
+  filter(!is.na(Urban_Influence_Code_2003))
+
+full_model <- lm(logDeathsPC ~ cases + Rural.urban_Continuum_Code_2003 + Urban_Influence_Code_2003 
+                 + Rural.urban_Continuum_Code_2013 + Urban_Influence_Code_2013 + POVALL_2018 
+                 + PCTPOVALL_2018 + POV017_2018 + PCTPOV017_2018 + POV517_2018 + PCTPOV517_2018 
+                 + MEDHHINC_2018 + pop_2015 + num_white + num_black + num_hispanic + num_asian 
+                 + num_other + num_nonwhite + perc_white + perc_black + perc_hispanic 
+                 + perc_nonwhite, data = county_deaths)
 
 kable(tidy(full_model, format = "markdown"), digits = 4)
 ```
 
 
 ```{r model_select}
-gbmodel_aug <- lm(data = movies, log_gb_rate ~ runtime + star_rating + log_num_user_star +
-              + log_num_user_reviews_imdb + num_critic_reviews_imdb + movie_rating +
-                  release_month + release_year + Action + Biography + Animation + Horror + Drama + Crime + Comedy + Adventure + Family + Fantasy + SciFi + Musical + Romance + Thriller + Mystery + Western + History + War + Music + Sport)
-kable(tidy(gbmodel_aug, format = "markdown"), digits = 4)
-model <- step(gbmodel_aug, direction = "backward")
+model <- step(full_model, direction = "backward", trace = FALSE)
+kable(tidy(model, format = "markdown"), digits = 4)
 ```
-
-Final linear regression model
 
 ### Testing Our Assumptions
 
 ```{r final-model}
-final <- lm(data = movies, log_gb_rate ~ runtime + star_rating + log_num_user_star + log_num_user_reviews_imdb + movie_rating + Action + Horror + Drama + Crime + Adventure + SciFi + Romance + Western + History + Sport)
-kable(tidy(final, format = "markdown"), digits = 4)
+final_model <- lm(logDeathsPC ~ cases + Rural.urban_Continuum_Code_2013 + 
+                    PCTPOV017_2018 + PCTPOV517_2018 + MEDHHINC_2018 + 
+                    pop_2015 + num_asian + perc_white + perc_black, data = county_deaths)
+
+kable(tidy(final_model, format = "markdown"), digits = 7)
 ```
 
 Above is the output of our final model, following the use of backwards selection.
