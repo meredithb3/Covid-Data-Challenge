@@ -208,13 +208,15 @@ ui <- dashboardPage(skin = "purple",
                                 "The poverty dataset contained a lot of variables but we determined the most useful for us would be county, fips code, 
                                 percent of its citizens in poverty, percent of its citizens with health insurance, and its 'rural urban continuum code' which 
                                 essentially describes how rural or urban (densely population) a county is."
-                                ),
-                            box(title = "Demographics Data", status = "warning", 
+                                )),
+                            box(title = "Demographics Data", status = "warning", width = "100%",
                                 "The demograhpics by county data comes from the webiste census.gov under the race data sections.", br(), br(),
-                                dataTableOutput("demog")
-                                )
-                            
-                            )
+                                dataTableOutput("demog"),
+                                "The demographics data was presented to us in terms of the raw number of people from each race by county so we manipulated 
+                                those variables into proportions before we began analysis as seen above. Additionally, originally, there were only values for state 
+                                and county numbers; we manipulated these values into their respective fips codes after looking online for how to do so. This was done 
+                                to give each dataset a fips code column so that we could merge them into one large dataset to prepare for analysis."
+                                ),
                     )
             ),
             
@@ -646,6 +648,12 @@ server <- function(input, output) {
             mutate(county = county.x) %>%
             select(county, fips, PCTPOVALL_2018, MEDHHINC_2018, RU_code) %>%
             datatable(., width = "100%", options = list(dom = "ftp", pageLength = 5))
+    })
+    
+    output$demog <- renderDataTable({
+        data %>%
+            mutate(county = county.x) %>%
+            select(county, state, fips, perc_black, perc_white, perc_hispanic, perc_asian, perc_other)
     })
 }
 
