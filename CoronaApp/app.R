@@ -132,6 +132,9 @@ county_deaths <- county_deaths %>%
     mutate(logCases = log(cases),
            log_pop_2015 = log(pop_2015))
 
+final <- lm(logDeathsPC ~ logCases + Rural.urban_Continuum_Code_2013 + 
+                PCTPOVALL_2018 + log_pop_2015 + perc_white + perc_black, data = county_deaths)
+
 county_deaths$predicted = predict.lm(final)
 county_deaths$resid = residuals(final)
 
@@ -187,9 +190,6 @@ define_quant <- function(num) {
     }
     return(length(quants1)+1)
 }
-
-final <- lm(logDeathsPC ~ logCases + Rural.urban_Continuum_Code_2013 + 
-                PCTPOVALL_2018 + log_pop_2015 + perc_white + perc_black, data = county_deaths)
 
 
 death_quants1 <- as.factor(mapply(define_quant, county_deaths$deathsPC))
@@ -515,10 +515,6 @@ server <- function(input, output) {
                  y = "# Counties with log(Deaths/Capita)")
     })
     output$finalModel <- renderText({
-        final <- lm(logDeathsPC ~ logCases + Rural.urban_Continuum_Code_2013 + 
-                        PCTPOVALL_2018 + log_pop_2015 + perc_white + perc_black, data = county_deaths)
-        
-        
         tidy(final, format = "markdown", exponentiate = TRUE) %>%
             kable("html",digits = 7) %>%
             kable_styling()
