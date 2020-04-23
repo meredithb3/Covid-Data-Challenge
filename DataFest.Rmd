@@ -422,9 +422,7 @@ After performing the transformations on 3 of the variables, the final model need
 ```{r final-model-2, warning=FALSE, message=FALSE}
 county_deaths <- county_deaths %>%
   mutate(logCases = log(cases),
-         log_pop_2015 = log(pop_2015),
-         log_perc_black = log(perc_black),
-         log_perc_white = log(perc_white))
+         log_pop_2015 = log(pop_2015))
 
 final <- lm(logDeathsPC ~ logCases + Rural.urban_Continuum_Code_2013 + 
                     PCTPOVALL_2018 + log_pop_2015 + perc_white + perc_black, data = county_deaths)
@@ -451,13 +449,8 @@ The baseline rural urban continuum code for our analysis is a code 1. If a count
 full_interaction <- lm(logDeathsPC ~ logCases + 
                     Rural.urban_Continuum_Code_2013 + PCTPOVALL_2018 +
                     log_pop_2015 + perc_white + perc_black + 
-                      logCases*Rural.urban_Continuum_Code_2013 +
                       logCases*PCTPOVALL_2018 + logCases*perc_white +
                       logCases*perc_black +
-                      Rural.urban_Continuum_Code_2013*perc_white + 
-                      Rural.urban_Continuum_Code_2013*perc_black + 
-                      Rural.urban_Continuum_Code_2013*PCTPOVALL_2018 + 
-                      Rural.urban_Continuum_Code_2013*log_pop_2015 + 
                       PCTPOVALL_2018*perc_white + PCTPOVALL_2018*perc_black +
                       PCTPOVALL_2018*log_pop_2015 + log_pop_2015*perc_white + 
                       log_pop_2015*perc_black,
