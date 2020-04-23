@@ -240,7 +240,7 @@ ui <- dashboardPage(skin = "purple",
                         box(title = "Assumption 1: Linearity", status = "success", solidHeader = TRUE,
                             "We can check the linearity assumption by graphing the response variable against all the predictor variables within our model. ", br(), br(),
                             selectInput("predictor","Predictor Variable:",
-                                        choices = list("log(cases)", "Rural-Urban Continuum Code", 
+                                        choices = list("log(Cases)", "Rural-Urban Continuum Code", 
                                                     "Percent in Poverty", "log(Population)", "Percent White",
                                                     "Percent Black")),
                             plotOutput("pVr"),
@@ -249,8 +249,14 @@ ui <- dashboardPage(skin = "purple",
                         
                         box(title = "Assumption 2: Constant Variance", status = "success", solidHeader = TRUE,
                             "Next, we can check the constant variance assumption by looking at the plot of the residuals of each predictor variable and the response variable. For this assumption to be satisfied, the regression variance must be the around the same for each predictor variable (randomly scattered points around y=0 line in residual plot).", br(), br(),
+                            selectInput("cvIn","Variable to be Plotted vs. Residuals:",
+                                        choices = list("Predicted","log(Cases)", "Rural-Urban Continuum Code", 
+                                                       "Percent in Poverty", "log(Population)", "Percent White",
+                                                       "Percent Black")),
                             plotOutput("constVar"),
+                            "We see that there does not seem to be any correlation between the residuals and the log(Deaths/Capita) or in any of the graphs plotting our residuals against our predictor variables. Therefore, we assume that our model fits the constant variance assumption, and we will proceed to check normality of our model."
                         )),
+                    
                     fluidRow(
                         box(title = "Assumption 3: Normality", status = "success", solidHeader = TRUE,
                             "Next, we can check the normality assumption by plotting the histogram of the residuals and the normal QQ plot of the residuals to check for any discrepancies and departures from normality.", br(), br(),
@@ -258,7 +264,9 @@ ui <- dashboardPage(skin = "purple",
                                         choices = list("Histogram of Residuals", "Normal QQ Plot")),
                             plotOutput("normalityPlot"),
                             textOutput("normalityTxt")
-                            )
+                            ),
+                        box(title = "Assumption 4: Inependence", status = "success", solidHeader = TRUE,
+                            "We do have a few concerns about the independence of our observations, mainly we believe that there may be some correlation between neighboring counties. Since the virus must be transmitted from person to person under our current knowledge, we believe that neighboring counties, which are divided not by a physical border, but just by a cartographic line, may have a highly correlated number of deaths per capita, as well as similar characteristics or features. However, we will proceed with caution in our analysis. ")
                         
                     )
             ),
@@ -369,7 +377,7 @@ server <- function(input, output) {
             kable_styling()
     })
     output$pVr <- renderPlot({
-        if(input$predictor == "log(cases)") {
+        if(input$predictor == "log(Cases)") {
             ggplot(data = county_deaths, aes(x = logCases, y = logDeathsPC)) +
                 geom_point(color = "black") +
                 labs(title = "Log Deaths/Capita vs Log Cases", y = "Log Deaths/Capita", x = "Log Cases")
@@ -378,13 +386,13 @@ server <- function(input, output) {
         if(input$predictor == "Rural-Urban Continuum Code") {
             ggplot(data = county_deaths, aes(x = Rural.urban_Continuum_Code_2013, y = logDeathsPC)) +
                 geom_point(color = "black") +
-                labs(title = "Log Deaths/Capita vs Log Cases", y = "Log Deaths/Capita", x = "Log Cases")
+                labs(title = "Log Deaths/Capita vs Continuum Code", y = "Log Deaths/Capita", x = "Continuum Code")
         }
         else
         if(input$predictor == "Percent in Poverty") {
             ggplot(data = county_deaths, aes(x = PCTPOVALL_2018, y = logDeathsPC)) +
                 geom_point(color = "black") +
-                labs(title = "Log Deaths/Capita vs Log Cases", y = "Log Deaths/Capita", x = "Log Cases")
+                labs(title = "Log Deaths/Capita vs Percent in Poverty", y = "Log Deaths/Capita", x = "Percent in Poverty")
         }
         else
         if(input$predictor == "log(Population)"){
@@ -397,19 +405,19 @@ server <- function(input, output) {
         if(input$predictor == "Percent White"){
             ggplot(data = county_deaths, aes(x = perc_white, y = logDeathsPC)) +
                 geom_point(color = "black") +
-                labs(title = "Log Deaths/Capita vs Log Population (2015)", y = "Log Deaths/Capita", 
-                     x = "Log Population (2015)")
+                labs(title = "Log Deaths/Capita vs Percent White", y = "Log Deaths/Capita", 
+                     x = "Percent White")
         }
         else
         if(input$predictor == "Percent Black"){
             ggplot(data = county_deaths, aes(x = perc_black, y = logDeathsPC)) +
                 geom_point(color = "black") +
-                labs(title = "Log Deaths/Capita vs Log Population (2015)", y = "Log Deaths/Capita", 
-                     x = "Log Population (2015)")
+                labs(title = "Log Deaths/Capita vs Percent Black", y = "Log Deaths/Capita", 
+                     x = "Percent Black")
         }
     })
     output$pVrTxt <- renderText({
-        if(input$predictor == "log(cases)") {
+        if(input$predictor == "log(Cases)") {
             "From the graph above, we can see that there is a slightly positive association between log deaths per capita and the log number of cases. We would expect this, as more cases would likely contribute to more deaths per capita. There are no obvious concerns with linearity here, although the data is sort of spread out in a slight backwards fan. "
         }
         else
@@ -435,12 +443,68 @@ server <- function(input, output) {
     })
     
     output$constVar <- renderPlot({
+    if(input$cvIn == "Predicted"){
         ggplot(data = county_deaths, mapping = aes(x = predicted, y = resid)) + 
             geom_point() + 
             geom_hline(yintercept = 0, color = "red") + 
             labs(title = "Residuals vs. Predicted Log Deaths/Capita",
                  x = "Log(Price)",
                  y = "Residual")
+    }
+    else
+    if(input$cvIn == "log(Cases)"){
+        ggplot(data = county_deaths, mapping = aes(x = logCases, y = resid)) + 
+            geom_point() + 
+            geom_hline(yintercept = 0, color = "red") + 
+            labs(title = "Residuals vs. Log Cases",
+                 x = "Log(Cases)",
+                 y = "Residuals")
+    }
+    else
+        if(input$cvIn == "Percent in Poverty"){
+            ggplot(data = county_deaths, mapping = aes(x = PCTPOVALL_2018, y = resid)) + 
+                geom_point() + 
+                geom_hline(yintercept = 0, color = "red") + 
+                labs(title = "Residuals vs. Percent in Poverty",
+                     x = "Percent in Poverty",
+                     y = "Residuals")
+        }
+    else
+        if(input$cvIn == "log(Population)"){
+            ggplot(data = county_deaths, mapping = aes(x = log_pop_2015, y = resid)) + 
+                geom_point() + 
+                geom_hline(yintercept = 0, color = "red") + 
+                labs(title = "Residuals vs. Log(Population)",
+                     x = "Log(Population)",
+                     y = "Residuals")
+        }
+    else
+        if(input$cvIn == "Percent White"){
+            ggplot(data = county_deaths, mapping = aes(x = perc_white, y = resid)) + 
+                geom_point() + 
+                geom_hline(yintercept = 0, color = "red") + 
+                labs(title = "Residuals vs. Percentage of White Residents",
+                     x = "Percentage of White Residents",
+                     y = "Residuals")
+        }
+    else
+        if(input$cvIn == "Percent Black"){
+            ggplot(data = county_deaths, mapping = aes(x = perc_black, y = resid)) + 
+                geom_point() + 
+                geom_hline(yintercept = 0, color = "red") + 
+                labs(title = "Residuals vs. Percentage of Black Residents",
+                     x = "Percentage of Black Residents",
+                     y = "Residuals")
+        }
+    else
+        if(input$cvIn == "Rural-Urban Continuum Code"){
+            ggplot(data = county_deaths, mapping = aes(x = Rural.urban_Continuum_Code_2013, y = resid)) + 
+                geom_boxplot() + 
+                geom_hline(yintercept=0,color="red") +
+                labs(x = "Female", 
+                     y="Residuals")
+        }
+        
     })
     
     output$normalityPlot <- renderPlot({
