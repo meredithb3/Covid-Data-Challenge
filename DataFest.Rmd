@@ -297,7 +297,7 @@ return(length(quants)+1)
 }
 
 
-death_quants <- as.factor(mapply(define_quant, county_death_pcs))
+death_quants <- as.factor(mapply(define_quant, county_deaths$deathsPC))
 county_deaths_temp <- county_deaths
 
 county_deaths_temp$quants <- as.factor(death_quants)
@@ -331,7 +331,7 @@ return(length(quants)+1)
 }
 
 
-death_quants <- as.factor(mapply(define_quant, county_death_pcs))
+death_quants <- as.factor(mapply(define_quant, county_deaths$deathsPC))
 county_deaths_temp <- county_deaths
 
 county_deaths_temp$quants <- as.factor(death_quants)
@@ -772,3 +772,13 @@ Likewise, the variable for percent poverty of a county, `PCTPOVALL_2018`, is hea
 In conclusion, the percent of counties inhabited by black Americans and the percent of counties that live in poverty are strong predictors of deaths per capita. Conversely, deaths per capita are strongly predicted by the number of people in a county that are poor or of color. Based on our analysis, the COVID-19 crisis is disproportionately affecting poor and black Americans.
 
 ### Limitations and Ideas for Further Research 
+
+There are a few limitations in our modelling that we would like to address. First, as addressed earlier, we do not believe that the number of deaths per capita in counties are independent datapoints. We discuss this further in our discussion of independence, but we believe that the number of deaths per capita are positively correlated with geographically neighboring counties which may have an effect on our modelling.
+
+Next, our sample sizes are still small. Despite the fact that this virus has become a global pandemic, the number of deaths that had been reported in the United States by April 15 are still not near the magnitude of deaths that will be reported by the end of this crisis. Further, many states are at different stages of the pandemic right now and report deaths at different rates. While New York seems to be reducing the number of cases in their state, others such as Iowa seem to have recently hit a new wave of infections and how the virus impacts different demographics could vary by state or region. Additionally, the virus could have different effects during points in it's timeline. While the rate at which deaths are occurring increases, the virus could affect different groups of people than in the stages that the virus is winding down, when it could theoretically only reach those that are most susceptible to it.
+
+Additionally, reporting is a major issue with data that is so new and up to the minute. Many states do an accurate job of reporting deaths. However, there is a lot of variation in the way that states report these deaths. Some states, such as California, are reporting deaths in real-time and re-visiting old cases and reporting on deaths that occurred as far back as February to help researchers model and learn about the virus. Other states, such as New York, are reporting what they determine to be probable deaths - deaths that they cannot confirm are due to coronavirus but believe are due to the virus. However, there are still other states that are reporting only deaths from confirmed cases and are doing so with an almost 1 week delay, without looking to revisit previous deaths. In all, reporting seems to be a large issue at this stage in studying the virus and we believe that as more time passes, more information becomes available, and more standard guidelines on reporting are set, that studies and models the effects of this virus will improve.
+
+For those who would like to expand upon our research, we would recommend that this research be repeated as more data becomes available. In addition, if data becomes available on the demographics of individuals killed by the virus in the future, we believe that could allow for more interesting anlyses rather than modelling the characteristics of the counties in which individuals are dying. Additionally, we think it would be interesting to expand this research to include more demographics as well. While we looked mostly at income, poverty, urbanization, and race, we think exploring additional demographics such as sex, the interaction of age and race, and number of individuals living within a household would also be interesting features to explore how they are correlated with coronavirus deaths.
+
+
