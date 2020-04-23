@@ -159,6 +159,40 @@ full_interaction <- lm(logDeathsPC ~ logCases +
                        data = county_deaths)
 interaction_model <- step(full_interaction, direction = "backward", trace = FALSE)
 
+quants <- quantile(county_deaths$deathsPC, probs = c(0.90))
+
+define_quant <- function(num) {
+    for (i in 1:length(quants)){
+        if (num < quants[i]){
+            return(i)
+        }
+    }
+    return(length(quants)+1)
+}
+
+
+death_quants <- as.factor(mapply(define_quant, county_deaths$deathsPC))
+
+county_deaths_temp <- county_deaths
+
+county_deaths_temp$quants <- as.factor(death_quants)
+
+quants1 <- quantile(county_deaths$deathsPC, probs = c(0.99))
+
+define_quant <- function(num) {
+    for (i in 1:length(quants1)){
+        if (num < quants1[i]){
+            return(i)
+        }
+    }
+    return(length(quants1)+1)
+}
+
+
+death_quants1 <- as.factor(mapply(define_quant, county_deaths$deathsPC))
+county_deaths_temp1 <- county_deaths
+
+county_deaths_temp1$quants1 <- as.factor(death_quants1)
 
 
 # Define UI for application that draws a histogram
@@ -244,8 +278,15 @@ ui <- dashboardPage(skin = "purple",
                             plotOutput("histLDPC"),
                             "The histogram of the log of deaths per capita by county appears relatively nornal and symmetric.
                             This is in agreement with the more even spread of counties affected in the map to the right and 
-                            will likely be good for modeling through our analysis portion.")
-                    )
+                            will likely be good for modeling through our analysis portion."),
+                        box(title = "10th Percentile Poverty and Race Analysis", status = "danger", solidHeader = TRUE,
+                            plotOutput("quant1"),
+                            "We hypothesize that there is an interaction between the percent of individuals in poverty, the percent of minorities in a county, and the number of coronavirus deaths per capita. Therefore, we would like to graph this relation. We see that the worst 10% of counties in terms of deaths per county seem to share some correlation with the percent of individuals in poverty and the percent of non-white individuals in a county. By worst 10%, we mean the 10% of counties that had the highest number of deaths per capita. We would also like to see if this correlation extends to the worst 1% of counties."
+                        ), box(title = "1st Percentile Poverty and Race Analysis", status = "danger", solidHeader = TRUE,
+                               plotOutput("quant2"),
+                               "We see that there again seems to be a correlation between the worst 1% of counties and higher percentages of non-white residents in a county and higher rates of poverty in a county. Therefore, we would like to investigate and address this effect further in our modelling."
+                        )
+                        )
             ),
             
             #model tab contents
@@ -378,13 +419,7 @@ ui <- dashboardPage(skin = "purple",
             #conclusion tab contents
             tabItem(tabName = "conclusion",
                     fluidRow(
-                        box(title = "General Commentary", status = "primary", solidHeader = TRUE,
-                            "The goal of this analysis was to explore the question:", br(),
-                            '`How does the COVID-19 pandemic disproportionately affect communities of color and/or poor Americans?`', br(), br(),
-                            'The United States is not unique in facing the challenges caused by the COVID-19 pandemic, but it is one of the few countries globally that lacks a national healthcare system and responded relatively slowly to the outbreak of the disease. As such, this was anticipated to lead to an exacerbation of the wealth divide in the United States, with the wealthy able to shelter in place with protective equipment, while poor Americans are forced to continue working in essential services to make ends meet.', br(), br(),
-                            'Through taking a concentrated look at the difference in counties across America, this analysis examined the ways in which demographic, economic, and disease-related predictors can be used to predict a good index of a pandemic-related disparity: deaths per capita."'
-                        ),
-                        box(title = "Discussion of Results", status = "warning", solidHeader = TRUE,
+                        box(title = "Discussion of Results", status = "success", solidHeader = TRUE,
                             'From the output of our final model and by evaluating the coefficients of the predictors using the associated p-values, we are able to evaluate the variables and interactions that are most significant in predicting deaths per capita:',
                             htmlOutput("finalModel2"),
                             'We are able to evaluate the variables and interactions that remain as those that are most significant in predicting deaths per capita. As one would assume, the coefficient for logCases is relatively large, implying for every 1 increase in logCases, there will be a large increase in deaths per capita.', br(),
@@ -394,6 +429,21 @@ ui <- dashboardPage(skin = "purple",
                             'Likewise, the variable for percent poverty of a county, PCTPOVALL_2018, is heavily influenced by its interaction with logCases. Holding all else constant, for every 1 increase in log cases, the effect of the percent poverty of a county on predicting deaths per capita increases 0.9711854, or almost 1. Thus, there is a 1:1 ratio for how increasing the number of log cases impacts the effect of poverty on deaths per capita.', br(),
                             
                             'In conclusion, the percent of counties inhabited by black Americans and the percent of counties that live in poverty are strong predictors of deaths per capita. Conversely, deaths per capita are strongly predicted by the number of people in a county that are poor or of color. Based on our analysis, the COVID-19 crisis is disproportionately affecting poor and black Americans.'
+                        ),
+                        box(title = "Limitations and Further Research", status = "warning", solidHeader = TRUE,
+                            'There are a few limitations in our modelling that we would like to address. First, as addressed earlier, we do not believe that the number of deaths per capita in counties are independent datapoints. We discuss this further in our discussion of independence, but we believe that the number of deaths per capita are positively correlated with geographically neighboring counties which may have an effect on our modelling.', br(), br(),
+                            
+                            'Next, our sample sizes are still small. Despite the fact that this virus has become a global pandemic, the number of deaths that had been reported in the United States by April 15 are still not near the magnitude of deaths that will be reported by the end of this crisis. Further, many states are at different stages of the pandemic right now and report deaths at different rates. While New York seems to be reducing the number of cases in their state, others such as Iowa seem to have recently hit a new wave of infections and how the virus impacts different demographics could vary by state or region. Additionally, the virus could have different effects during points in it\'s timeline. While the rate at which deaths are occurring increases, the virus could affect different groups of people than in the stages that the virus is winding down, when it could theoretically only reach those that are most susceptible to it.', br(), br(),
+
+                            'Additionally, reporting is a major issue with data that is so new and up to the minute. Many states do an accurate job of reporting deaths. However, there is a lot of variation in the way that states report these deaths. Some states, such as California, are reporting deaths in real-time and re-visiting old cases and reporting on deaths that occurred as far back as February to help researchers model and learn about the virus. Other states, such as New York, are reporting what they determine to be probable deaths - deaths that they cannot confirm are due to coronavirus but believe are due to the virus. However, there are still other states that are reporting only deaths from confirmed cases and are doing so with an almost 1 week delay, without looking to revisit previous deaths. In all, reporting seems to be a large issue at this stage in studying the virus and we believe that as more time passes, more information becomes available, and more standard guidelines on reporting are set, that studies and models the effects of this virus will improve.', br(), br(),
+
+                            'For those who would like to expand upon our research, we would recommend that this research be repeated as more data becomes available. In addition, if data becomes available on the demographics of individuals killed by the virus in the future, we believe that could allow for more interesting anlyses rather than modelling the characteristics of the counties in which individuals are dying. Additionally, we think it would be interesting to expand this research to include more demographics as well. While we looked mostly at income, poverty, urbanization, and race, we think exploring additional demographics such as sex, the interaction of age and race, and number of individuals living within a household would also be interesting features to explore how they are correlated with coronavirus deaths.'
+                            ),
+                        box(title = "General Commentary", status = "primary", solidHeader = TRUE,
+                            "The goal of this analysis was to explore the question:", br(),
+                            '`How does the COVID-19 pandemic disproportionately affect communities of color and/or poor Americans?`', br(), br(),
+                            'The United States is not unique in facing the challenges caused by the COVID-19 pandemic, but it is one of the few countries globally that lacks a national healthcare system and responded relatively slowly to the outbreak of the disease. As such, this was anticipated to lead to an exacerbation of the wealth divide in the United States, with the wealthy able to shelter in place with protective equipment, while poor Americans are forced to continue working in essential services to make ends meet.', br(), br(),
+                            'Through taking a concentrated look at the difference in counties across America, this analysis examined the ways in which demographic, economic, and disease-related predictors can be used to predict a good index of a pandemic-related disparity: deaths per capita."'
                         )
                     )
             )
@@ -681,6 +731,28 @@ server <- function(input, output) {
         tidy(final, format = "markdown", exponentiate = TRUE) %>%
             kable("html",digits = 7) %>%
             kable_styling()
+    })
+    
+    output$quant1 <- renderPlot({
+        county_deaths_temp %>% 
+            ggplot(mapping = aes(x=PCTPOVALL_2018, y=perc_nonwhite, color=quants))+
+            geom_point(alpha=0.3) +
+            labs(title = "Top 10 percent of Deaths Per Capita", 
+                 x = "Percent in Poverty", y = "Percent Non-White Residents") + 
+            theme(legend.position = "right") +
+            labs(color='Quantiles', labels = c("Bottom 90%", "Worst 10%"))+
+            scale_color_manual(labels = c("Bottom 90%", "Worst 10%"), values = c("blue", "red"))
+    })
+    
+    output$quant2 <- renderPlot ({
+        county_deaths_temp1 %>% 
+            ggplot(mapping = aes(x=PCTPOVALL_2018, y=perc_nonwhite, color=quants1))+
+            geom_point(alpha=0.3) +
+            labs(title = "Top 1 percent of Deaths Per Capita", 
+                 x = "Percent in Poverty", y = "Percent Non-White Residents") + 
+            theme(legend.position = "right") +
+            labs(color='Quantiles', labels = c("Bottom 99%", "Worst 1%"))+
+            scale_color_manual(labels = c("Bottom 90%", "Worst 1%"), values = c("blue", "red"))
     })
 }
 
