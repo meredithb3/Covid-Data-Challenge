@@ -11,6 +11,7 @@ library(knitr)
 library(rms)
 library(stats)
 library(kableExtra)
+library(DT)
 
 covidData <- read.csv("coronacounties.csv")
 povertyData <- read.csv("PovertyEstimates.csv")
@@ -194,7 +195,24 @@ ui <- dashboardPage(skin = "purple",
             #data tab contents
             tabItem(tabName = "data",
                     fluidRow(
-                        box(title = "box1", status = "primary", solidHeader = TRUE,
+                        box(title = "Our Dataets & Sources", status = "primary", solidHeader = TRUE, width = 1000,
+                            box(title = "COVID-19 Data", status = "danger",
+                                "Our COVID data by county comes from the New York Times COVID dataset available on github.", br(),
+                                dataTableOutput("covid"),
+                                "The COVID dataset contained each county's data for fips code, number of cases, number of deaths, and state all by date since 
+                                January 21st. We combined this in order to create a dataset that had the total number of deaths and cases (not shown here) on 
+                                April 15th, the last day in which we downloaded the data before finalizing our analysis."),
+                            box(title = "Poverty Data", status = "success", 
+                                "Our poverty statistics by county data comes from the website census.gov under the poverty information section.", br(),
+                                dataTableOutput("poverty"),
+                                "The poverty dataset contained a lot of variables but we determined the most useful for us would be county, fips code, 
+                                percent of its citizens in poverty, percent of its citizens with health insurance, and its 'rural urban continuum code' which 
+                                essentially describes how rural or urban (densely population) a county is."
+                                ),
+                            box(title = "Demographics Data", status = "warning", 
+                                "The demograhpics by county data comes from the webiste census.gov under the race data sections.", br(),
+                                
+                                )
                             
                             )
                     )
@@ -290,7 +308,7 @@ ui <- dashboardPage(skin = "purple",
                             plotOutput("normalityPlot"),
                             textOutput("normalityTxt")
                             ),
-                        box(title = "Assumption 4: Inependence", status = "success", solidHeader = TRUE,
+                        box(title = "Assumption 4: Independence", status = "success", solidHeader = TRUE,
                             "We do have a few concerns about the independence of our observations, mainly we believe that there may be some correlation between neighboring counties. Since the virus must be transmitted from person to person under our current knowledge, we believe that neighboring counties, which are divided not by a physical border, but just by a cartographic line, may have a highly correlated number of deaths per capita, as well as similar characteristics or features. However, we will proceed with caution in our analysis. ")
                         
                     )
@@ -324,9 +342,8 @@ ui <- dashboardPage(skin = "purple",
                             "After including all possible interaction effects in a model and then using the same method
                             of backward selection with BIC as a criterion, we obtain the above model and see that there 
                             appear to be significant interactions with the following: log(cases) with percent in poverty, percent black,
-                            and percent white. percent in poverty with percent black and log(population). log(population) with percent black.", br(), br(),
-                            
-                            #NEED TO PUT INTERACTION EFFECTS ANALYSIS HERE
+                            and percent white. percent in poverty with percent black and log(population). log(population) with percent black.
+                            We will go into more detail with exactly what these interactions mean in our model in the 'Interpretation' tab.", br(), br(),
                             )
                         
             
@@ -337,15 +354,17 @@ ui <- dashboardPage(skin = "purple",
             #interp tab contents
             tabItem(tabName = "interp",
                     fluidRow(
-                        box(width = 1000, title = "Interpretation of Model Coefficients", status = "info", solidHeader = TRUE,
-                            'Now that we have determined that our model is satisfactory, we can begin to provide an interpretation of the model. We see, unsurprisingly, that the number of cases has a high correlation with the number of deaths per capita in a county. However, looking at the p-values of the model coefficients we also see that there is strong evidence that there is a correlation between certain urban continuum codes, or how large and urbanized a county is, and how many deaths per capita there are in the county. Interestingly, the two codes with the strongest evidence (or the lowest p-value) to be correlated with the deaths per capita in a county are for counties with a code 9 or "less than 2,500 urban population, not adjacent to a metro area" and for counties with a code 3 or "counties in metro areas of fewer than 250,000 population."',
-                            br(), br(),
-                            'We will also interpret the model coefficients from our model. We expect that as the log number of cases increases by 1, we expect the number of deaths per capita in the county to increase by 2.255 on average. Additionally, we expect that as the log population increases by 1, we expect the the number of deaths per capita to increase by 1.3779. Next, we expect that as the percentage of white inhabitants in a county increases by 1 percent, the deaths per capita in the county will increase by 0.013 on average. Meanwhile, as the percentage of black inhabitants in a county increases by 1 percent, the deaths per capita in the county will increase by 0.0077 on average. If the percentage of individuals in poverty in a county increases by 1 percent in a county, we expect the deaths per capita in the county to increase by 0.0101 on average. In the following paragraph, we will provide interpretation for the coefficients corresponding to the rural urban continuum codes generated by the model.',
-                            br(), br(),
-                            'A key of all of the rural urban continuum codes can be found at https://seer.cancer.gov/seerstat/variables/countyattribs/ruralurban.html. In general, as the code number increases, a county is smaller and less urban.',
-                            br(), br(),
-                            'The baseline rural urban continuum code for our analysis is a code 1. If a county has a rural urban continuum code of 2, we expect there to be 0.8997374 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 3, we expect there to be 0.7460708 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 4, we expect there to be 0.8093420 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 5, we expect there to be 0.8770798 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 6, we expect there to be 0.9905803 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 7, we expect there to be 1.1904460 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 8, we expect there to be 1.4139911 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 9, we expect there to be 1.8102279 deaths per capita more than counties with a baseline code on average. This trend seems to indicate that as a county becomes less urban, the average deaths per capita seems to increase.'
-                        )
+                        box(width = 1000, title = "Coefficient & General Interpretation", status = "info", solidHeader = TRUE,
+                            "We again see that the number of cases has a high correlation with the number of deaths per capita in a county as we would expect. Some of the Rural Urban Continuum codes still contain strong evidence for a correlation with the log deaths per capita, as noted by the p-value. We now see that the log population of a county now has strong evidence for a correlation with the log deaths per capita. Additionally, all of the interactions seem to be have fairly strong evidence of being correlated with the log number of deaths per capita. Additionally, we see that the interaction between the percentage of individuals in poverty and the percentage of black individuals in a county is retained in our final model, which was an interaction that we had discussed wanting to explore further. we see that as a county increases it's percentage of black residents and it's percentage of residents in poverty, the deaths per capita in the county increase on average.", br(), br(),
+                            
+                            box(width = 1000, title = "Regular Model Coefficients", status = "danger",
+                                'We expect that as the log number of cases increases by 1, we expect the number of deaths per capita in the county to increase by 3.7028 on average. Additionally, we expect that as the log population increases by 1, we expect the the number of deaths per capita to increase by 0.29226 on average. Next, we expect that as the percentage of white inhabitants in a county increases by 1 percent, the deaths per capita in the county will increase by .0509 on average. Meanwhile, as the percentage of black inhabitants in a county increases by 1 percent, the deaths per capita in the county will increase by .7247 on average. If the percentage of individuals in poverty in a county increases by 1 percent in a county, we expect the deaths per capita in the county to increase by .0089 on average. In the following paragraph, we will provide interpretation for the coefficients corresponding to the rural urban continuum codes generated by the model.', br(), br(),
+                                'A key of all of the rural urban continuum codes can be found at https://seer.cancer.gov/seerstat/variables/countyattribs/ruralurban.html. In general, as the code number increases, a county is smaller and less urban.', br(), br(),
+                                'The baseline rural urban continuum code for our analysis is a code 1. If a county has a rural urban continuum code of 2, we expect there to be 1.0143721  deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 3, we expect there to be 0.8300360 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 4, we expect there to be 0.8628820 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 5, we expect there to be 0.9337068 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 6, we expect there to be 1.0256837 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 7, we expect there to be 1.1207587	 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 8, we expect there to be 1.3932181 deaths per capita more than counties with a baseline code on average. If a county has a rural urban continuum code of 9, we expect there to be 1.6894608 deaths per capita more than counties with a baseline code on average. This trend seems to indicate that as a county becomes less urban, the average deaths per capita seems to increase.'
+                            ),
+                            box(width = 1000, title = "Interaction Coefficients", status = "danger",)
+                        ),
+                        
                     )
                     
             ),
@@ -612,6 +631,21 @@ server <- function(input, output) {
         tidy(interaction_model, format = "markdown") %>%
         kable("html",digits = 4) %>%
             kable_styling()
+    })
+    
+    output$covid <- renderDataTable({
+        county_deaths %>%
+            mutate(county = county.x) %>%
+            select(county, state, fips, total_deaths, date) %>%
+            datatable(., options = list(dom = "ftp", pageLength = 5))
+    })
+    
+    output$poverty <- renderDataTable({
+        data %>%
+            mutate(RU_code = Rural.urban_Continuum_Code_2003) %>%
+            mutate(county = county.x) %>%
+            select(county, fips, PCTPOVALL_2018, MEDHHINC_2018, RU_code) %>%
+            datatable(., width = "100%", options = list(dom = "ftp", pageLength = 5))
     })
 }
 
