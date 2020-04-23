@@ -297,7 +297,7 @@ return(length(quants)+1)
 }
 
 
-death_quants <- as.factor(mapply(define_quant, county_death_pcs))
+death_quants <- as.factor(mapply(define_quant, county_deaths_pcs))
 county_deaths_temp <- county_deaths
 
 county_deaths_temp$quants <- as.factor(death_quants)
