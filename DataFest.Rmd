@@ -39,10 +39,9 @@ demoData2 <- read.csv("stco-mr2010_mt_wy.csv")
 demoData <- rbind(demoData1, demoData2)
 ```
 
-
 # Section 1: Introduction
-
 ### Exploratory Data Analysis
+
 First, let's start by glimpsing all of our datasets.
 
 ```{r cov-data}
@@ -136,10 +135,7 @@ demographicsData['perc_hispanic'] <- demographicsData$num_hispanic/demoDfPopulat
 demographicsData['perc_nonwhite'] <- demographicsData$num_nonwhite/demoDfPopulation
 demographicsData['perc_asian'] <- demographicsData$num_asian/demoDfPopulation
 demographicsData['perc_other'] <- demographicsData$num_other/demoDfPopulation
-
-glimpse(demographicsData)
 ```
-
 
 All of our datasets have a variation of the variable `fips`, which is the Federal Information Processing Standard [https://en.wikipedia.org/wiki/FIPS_county_code] that allows counties to be uniquely identified. 
 
@@ -152,10 +148,9 @@ data <- merge(data, demographicsData, by.x = 'fips', by.y = 'fips')
 glimpse(data)
 ```
 
-We will focus our analysis on the number of deaths resulting from COVID-19 for a few diferrent reasons. Testing varies greatly between states and counties. A region that has not done that much testing could appear to have a low number of cases but have the same number of deaths as a region that has done a lot of testing and thus has turned up a large number of less severe COVID-19 cases. Meanwhile, analyzing deaths has a lower correlation with the number of tests performed as cases that are severe enough to end with a mortality tend to receive professional medical care and, thus, a test at some point. (We realize that this is not always the case as regions that are under-resourced often do not have the capacity to tend to all individuals or even test incredibly sick individuals.) Additionally, more affluent individuals with a primary doctor have had easier access to testing in the United States, and thus, this would lend us to believe that the percent of cases in affluent regions would be inflated when compared to the percent of cases in non-affluent regions in the United States. 
+We will focus our analysis on the number of deaths resulting from COVID-19 for a few different reasons. Testing varies greatly between states and counties. A region that has not done that much testing could appear to have a low number of cases but have the same number of deaths as a region that has done a lot of testing and thus has turned up a large number of less severe COVID-19 cases. Meanwhile, analyzing deaths has a lower correlation with the number of tests performed as cases that are severe enough to end with a mortality tend to receive professional medical care and, thus, a test at some point. (We realize that this is not always the case as regions that are under-resourced often do not have the capacity to tend to all individuals or even test incredibly sick individuals.) Additionally, more affluent individuals with a primary doctor have had easier access to testing in the United States, and thus, this would lend us to believe that the percent of cases in affluent regions would be inflated when compared to the percent of cases in non-affluent regions in the United States. 
 
 Beginning our EDA, we will first look at the total number of deaths in the United States by state. 
-
 
 ```{r cases-plot, warning=FALSE}
 county_deaths <- data %>%
@@ -180,9 +175,6 @@ cases_map <- cases_map +
 cases_map
 ```
 
-Need to add histograms for the response variable we choose, the predictors we choose, and plots for the response v. predictors relationships
-(We can do this in the section following - response variable description and predictor descriptions)
-
 ```{r cases-plot-per-capita, warning=FALSE}
 state_capita_deaths <- county_deaths %>%
   group_by(state) %>%
@@ -197,7 +189,6 @@ capita_deaths_map <- capita_deaths_map +
 
 capita_deaths_map
 ```
-
 
 ```{r deaths-plot-county, warning=FALSE}
 county_deaths <- data %>%
@@ -256,8 +247,6 @@ county_cases_map <- county_cases_map +
 county_cases_map
 ```
 
-
-
 ```{r deaths-hist}
 county_deaths %>%
   ggplot(mapping = aes(x = total_deaths)) +
@@ -291,15 +280,8 @@ This historam of the log(Deaths/Capita) by county shows much more evidence of no
 Another possible option to analyze as a response would be the number of cases per capita of a county. This may work better as it would correlate significantly less with population as we have "accounted" for this already in the response.
 
 We, however, see a much more even distribution using the log of deaths per capita. It is important to note that many counties appear as grey in this map; these counties have zero cases and thus the log of them returns the value of negative infinity causing this. 
-The histogram of the log of cases per capita is very normal which would be perfect for analysis.
 
-### Description of the Response Variable
-
-The response variable for use in the model will be log of deaths per capita. As shown above, this version of the response variable deals with some of the skewness in deaths per capita. 
-
-### Descriptions of the Regressors
-
-The full model will predict from all variables other than those that identify the area which the data point represents, such as FIPS code, data, county, and state.
+The histogram of the log of deaths per capita is very normal, which would be perfect for analysis.
 
 # Section 2: Regression Analysis 
 ### Generating Our Model
@@ -343,7 +325,7 @@ final_model <- lm(logDeathsPC ~ cases + Rural.urban_Continuum_Code_2013 +
 kable(tidy(final_model, format = "markdown"), digits = 7)
 ```
 
-Above is the output of our final model, following the use of backwards selection.
+Above is the output of our final model with no interactions following the use of backwards selection.
 
 ### Distributions of Regressors
 
@@ -364,7 +346,6 @@ ggplot(data = county_deaths, aes(x = PCTPOVALL_2018)) +
   geom_histogram(color = "Black", fill = "Light Blue", bins = 20) + 
   labs(title = "Distribution of Percent Poverty", x = "Percent in Poverty", y = "Count")
 ```
-
 
 ```{r population-2015}
 ggplot(data = county_deaths, aes(x = pop_2015)) +
@@ -414,9 +395,9 @@ ggplot(data = county_deaths, aes(x = log(perc_black))) +
        y = "Count")
 ```
 
-After these transformations, the `cases`, `pop_2015`, and `num_asian` variables are much more normally distributed. The `perc_white` and `perc_black` variables are still skewed when log transformed, so we will work with the untransformed versions of them, and mark their failure of this condition in our conclusion.
+After these transformations, the `cases` and `pop_2015` variables are much more normally distributed. The `perc_white` and `perc_black` variables are still skewed when log transformed, so we will work with the untransformed versions of them, and mark their failure of this condition in our conclusion.
 
-After performing the transformations on 3 of the variables, the final model needs to be updated to reflect this:
+After performing the transformations on the 2 variables, the final model needs to be updated to reflect this:
 
 ```{r final-model-2, warning=FALSE, message=FALSE}
 county_deaths <- county_deaths %>%
@@ -430,8 +411,8 @@ kable(tidy(final, format = "markdown"), digits = 7)
 kable(tidy(final, format = "markdown", exponentiate = TRUE), digits = 7)
 ```
 
-
 #### Interaction Effects
+
 ```{r full-interaction, warning = FALSE}
 full_interaction <- lm(logDeathsPC ~ logCases + 
                     Rural.urban_Continuum_Code_2013 + PCTPOVALL_2018 +
@@ -446,13 +427,12 @@ full_interaction <- lm(logDeathsPC ~ logCases +
 kable(tidy(full_interaction, format = "markdown"), digits = 4)
 ```
 
-
 ```{r full-interaction-selection, warning = FALSE}
 interaction_model <- step(full_interaction, direction = "backward", trace = FALSE)
 kable(tidy(interaction_model, format = "markdown"), digits = 4)
 ```
 
-```{r final-interactoin, warning=FALSE}
+```{r final-interaction, warning=FALSE}
 
 final <- lm(logDeathsPC ~ logCases + 
                     Rural.urban_Continuum_Code_2013 + PCTPOVALL_2018 +
@@ -549,7 +529,6 @@ Next, we can check the constant variance assumption by looking at the plot of th
 ```{r ridemodelresid}
 county_deaths$predicted = predict.lm(final)
 county_deaths$resid = residuals(final)
-
 ```
 
 ```{r predict-resid}
@@ -614,7 +593,6 @@ ggplot(data = county_deaths, mapping = aes(x = Rural.urban_Continuum_Code_2013, 
        y="Residuals")
 ```
 
-
 We see that there does not seem to be any correlation between the residuals and the log(Deaths/Capita) or in any of the graphs plotting our residuals against our predictor variables. Therefore, we assume that our model fits the constant variance assumption, and we will proceed to check normality of our model.
 
 #### Normality
@@ -656,10 +634,10 @@ head(final_output, 5)
 The model diagnostics for MLR are checking leverage, standardized residuals, Cook's distance, and VIF values. 
 
 #### Multicollinearity
+
 ```{r multicolvif}
 vif(final)
 ```
-
 
 #### Influential Points
 
@@ -705,11 +683,24 @@ Through taking a concentrated look at the difference in counties across America,
 
 ### Discussion of Results
 
-From the output of our final model and by evaluating the coefficients of the predictors using the associated p-values, we are able to evaluate the variables and interactions that are most significant in predicting deaths per capita:
+In predicting from most variables in our `county_deaths` dataset, we created a full model that was then put through backward selection. After backward selection, the following predictors and coefficients remained:
 
-```{r coefficients, warning=FALSE, message=FALSE}
+```{r coefficients}
+kable(tidy(final_model, format = "markdown"), digits = 7)
+```
+
+These coefficients predict log(deaths/capita). However, we further examined the interaction effects between these remaining predictors. Adding interaction effects between all remaining variables and again performing backward selection led to the predictors and coefficients in our final model:
+
+```{r coefficients-2, warning=FALSE, message=FALSE}
 kable(tidy(final, format = "markdown", exponentiate = TRUE), digits = 7)
 ```
 
+We are able to evaluate the variables and interactions that remain as those that are most significant in predicting deaths per capita. As one would assume, the coefficient for `logCases` is relatively large, implying for every 1 increase in logCases, there will be a large increase in deaths per capita.
+
+Most interestingly, and in accordance with our research question, the coefficient for `perc_black` is substantially larger than the other coefficients, being over 14 times larger than the other coefficents in predicting deaths per capita. This leads to the conclusion that a higher percent of a county made up of black inhabitants significantly increases the deaths per capita for the county. Further, when examining the interaction effects, any increase in `logCases`, `PCTPOVALL_2018`, and/or `log_pop_2015` increases the effect of `perc_black` on predicting deaths per capita. 
+
+Likewise, the variable for percent poverty of a county, `PCTPOVALL_2018`, is heavily influenced by its interaction with `logCases`. Holding all else constant, for every 1 increase in log cases, the effect of the percent poverty of a county on predicting deaths per capita increases 0.9711854, or almost 1. Thus, there is a 1:1 ratio for how increasing the number of log cases impacts the effect of poverty on deaths per capita. 
+
+In conclusion, the percent of counties inhabited by black Americans and the percent of counties that live in poverty are strong predictors of deaths per capita. Conversely, deaths per capita are strongly predicted by the number of people in a county that are poor or of color. Based on our analysis, the COVID-19 crisis is disproportionately affecting poor and black Americans.
 
 ### Limitations and Ideas for Further Research 
