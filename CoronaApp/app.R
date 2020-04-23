@@ -211,7 +211,7 @@ ui <- dashboardPage(skin = "purple",
                                 ),
                             box(title = "Demographics Data", status = "warning", 
                                 "The demograhpics by county data comes from the webiste census.gov under the race data sections.", br(),
-                                
+                                dataTableOutput("demog")
                                 )
                             
                             )
