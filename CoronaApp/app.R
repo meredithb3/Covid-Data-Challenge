@@ -189,7 +189,9 @@ ui <- dashboardPage(skin = "purple",
                         ),
                     box(title = "Purpose", status = "primary", solidHeader = TRUE,
                         htmlOutput(outputId = "purposeText")
-                        )
+                        ), br(), br(), br(), br(), br(), br(), br(), br(),
+                    div(img(src = "covid-19.png", align = "center", height = 300), style="text-align: center;")
+                    #image source - https://meeting.nutrition.org/coronavirus-updates-and-resources/
             ),
             
             #data tab contents
@@ -384,8 +386,15 @@ ui <- dashboardPage(skin = "purple",
                         ),
                         box(title = "Discussion of Results", status = "warning", solidHeader = TRUE,
                             'From the output of our final model and by evaluating the coefficients of the predictors using the associated p-values, we are able to evaluate the variables and interactions that are most significant in predicting deaths per capita:',
-                            htmlOutput("finalModel2"))
-                        
+                            htmlOutput("finalModel2"),
+                            'We are able to evaluate the variables and interactions that remain as those that are most significant in predicting deaths per capita. As one would assume, the coefficient for logCases is relatively large, implying for every 1 increase in logCases, there will be a large increase in deaths per capita.', br(),
+                            
+                            'Most interestingly, and in accordance with our research question, the coefficient for perc_black is substantially larger than the other coefficients, being over 14 times larger than the other coefficents in predicting deaths per capita. This leads to the conclusion that a higher percent of a county made up of black inhabitants significantly increases the deaths per capita for the county. Further, when examining the interaction effects, any increase in logCases, PCTPOVALL_2018, and/or log_pop_2015 increases the effect of `perc_black` on predicting deaths per capita. ', br(),
+                            
+                            'Likewise, the variable for percent poverty of a county, PCTPOVALL_2018, is heavily influenced by its interaction with logCases. Holding all else constant, for every 1 increase in log cases, the effect of the percent poverty of a county on predicting deaths per capita increases 0.9711854, or almost 1. Thus, there is a 1:1 ratio for how increasing the number of log cases impacts the effect of poverty on deaths per capita.', br(),
+                            
+                            'In conclusion, the percent of counties inhabited by black Americans and the percent of counties that live in poverty are strong predictors of deaths per capita. Conversely, deaths per capita are strongly predicted by the number of people in a county that are poor or of color. Based on our analysis, the COVID-19 crisis is disproportionately affecting poor and black Americans.'
+                        )
                     )
             )
             
