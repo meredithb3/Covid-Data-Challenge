@@ -188,6 +188,9 @@ define_quant <- function(num) {
     return(length(quants1)+1)
 }
 
+final <- lm(logDeathsPC ~ logCases + Rural.urban_Continuum_Code_2013 + 
+                PCTPOVALL_2018 + log_pop_2015 + perc_white + perc_black, data = county_deaths)
+
 
 death_quants1 <- as.factor(mapply(define_quant, county_deaths$deathsPC))
 county_deaths_temp1 <- county_deaths
