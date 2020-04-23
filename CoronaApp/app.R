@@ -197,20 +197,20 @@ ui <- dashboardPage(skin = "purple",
                     fluidRow(
                         box(title = "Our Dataets & Sources", status = "primary", solidHeader = TRUE, width = 1000,
                             box(title = "COVID-19 Data", status = "danger",
-                                "Our COVID data by county comes from the New York Times COVID dataset available on github.", br(),
+                                "Our COVID data by county comes from the New York Times COVID dataset available on github.", br(), br(),
                                 dataTableOutput("covid"),
                                 "The COVID dataset contained each county's data for fips code, number of cases, number of deaths, and state all by date since 
                                 January 21st. We combined this in order to create a dataset that had the total number of deaths and cases (not shown here) on 
                                 April 15th, the last day in which we downloaded the data before finalizing our analysis."),
                             box(title = "Poverty Data", status = "success", 
-                                "Our poverty statistics by county data comes from the website census.gov under the poverty information section.", br(),
+                                "Our poverty statistics by county data comes from the website census.gov under the poverty information section.", br(), br(),
                                 dataTableOutput("poverty"),
                                 "The poverty dataset contained a lot of variables but we determined the most useful for us would be county, fips code, 
                                 percent of its citizens in poverty, percent of its citizens with health insurance, and its 'rural urban continuum code' which 
                                 essentially describes how rural or urban (densely population) a county is."
                                 ),
                             box(title = "Demographics Data", status = "warning", 
-                                "The demograhpics by county data comes from the webiste census.gov under the race data sections.", br(),
+                                "The demograhpics by county data comes from the webiste census.gov under the race data sections.", br(), br(),
                                 dataTableOutput("demog")
                                 )
                             
