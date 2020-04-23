@@ -67,7 +67,6 @@ glimpse(demoData)
 
 We notice that our data on demographics is split up by age group and has a large number of classifications for the race of an individual which is important for census considerations but would complicate our modelling and visualizations, so we will limit our data to exclude age and bundle many of the less frequent races.
 
-
 ```{r demoData-setup, message=FALSE}
 white_people_by_county <- demoData %>% 
         filter(IMPRACE == 1, ORIGIN == 1) %>% 
@@ -408,7 +407,7 @@ ggplot(data = county_deaths, aes(x = log(perc_white))) +
        y = "Count")
 ```
 
-```{r perc-black}
+```{r log-perc-black}
 ggplot(data = county_deaths, aes(x = log(perc_black))) +
   geom_histogram(color = "Black", fill = "Light Blue", bins = 20) + 
   labs(title = "Distribution of Log Black Percent of Population ", x = "Log Black Percent of Population", 
@@ -697,6 +696,20 @@ We see that there are no observations involved in our model that have a cooks di
 
 ### General Commentary
 
+The goal of this analysis was to explore the question:
+`How does the COVID-19 pandemic disproportionately affect communities of color and poor Americans?`
+
+The United States is not unique in facing the challenges caused by the COVID-19 pandemic, but it is one of the few countries globally that lacks a national healthcare system and responded relatively slowly to the outbreak of the disease. As such, this was anticipated to lead to an exacerbation of the wealth divide in the United States, with the wealthy able to shelter in place with protective equipment, while poor Americans are forced to continue working in essential services to make ends meet. 
+
+Through taking a concentrated look at the difference in counties across America, this analysis examined the ways in which demographic, economic, and disease-related predictors can be used to predict a good index of a pandemic-related disparity: deaths per capita.
+
 ### Discussion of Results
+
+From the output of our final model and by evaluating the coefficients of the predictors using the associated p-values, we are able to evaluate the variables and interactions that are most significant in predicting deaths per capita:
+
+```{r coefficients, warning=FALSE, message=FALSE}
+kable(tidy(final, format = "markdown", exponentiate = TRUE), digits = 7)
+```
+
 
 ### Limitations and Ideas for Further Research 
