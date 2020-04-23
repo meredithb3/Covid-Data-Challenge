@@ -283,6 +283,74 @@ We, however, see a much more even distribution using the log of deaths per capit
 
 The histogram of the log of deaths per capita is very normal, which would be perfect for analysis.
 
+```{r scatterplot-race-income-cases-10}
+
+quants <- quantile(county_deaths$deathsPC, probs = c(0.90))
+
+define_quant <- function(num) {
+  for (i in 1:length(quants)){
+    if (num < quants[i]){
+      return(i)
+    }
+  }
+return(length(quants)+1)
+}
+
+
+death_quants <- as.factor(mapply(define_quant, county_death_pcs))
+county_deaths_temp <- county_deaths
+
+county_deaths_temp$quants <- as.factor(death_quants)
+
+
+county_deaths_temp %>% 
+  ggplot(mapping = aes(x=PCTPOVALL_2018, y=perc_nonwhite, color=quants))+
+  geom_point(alpha=0.3) +
+  labs(title = "Top 10 percent of Deaths Per Capita", 
+      x = "Percent in Poverty", y = "Percent Non-White Residents") + 
+  theme(legend.position = "right") +
+  labs(color='Quantiles', labels = c("Bottom 90%", "Worst 10%"))+
+  scale_color_manual(labels = c("Bottom 90%", "Worst 10%"), values = c("blue", "red"))
+
+```
+
+We hypothesize that there is an interaction between the percent of individuals in poverty, the percent of minorities in a county, and the number of coronavirus deaths per capita. Therefore, we would like to graph this relation. We see that the worst 10% of counties in terms of deaths per county seem to share some correlation with the percent of individuals in poverty and the percent of non-white individuals in a county. By worst 10%, we mean the 10% of counties that had the highest number of deaths per capita. We would also like to see if this correlation extends to the worst 1% of counties.
+
+
+```{r scatterplot-race-income-cases-1}
+
+quants <- quantile(county_deaths$deathsPC, probs = c(0.99))
+
+define_quant <- function(num) {
+  for (i in 1:length(quants)){
+    if (num < quants[i]){
+      return(i)
+    }
+  }
+return(length(quants)+1)
+}
+
+
+death_quants <- as.factor(mapply(define_quant, county_death_pcs))
+county_deaths_temp <- county_deaths
+
+county_deaths_temp$quants <- as.factor(death_quants)
+
+
+county_deaths_temp %>% 
+  ggplot(mapping = aes(x=PCTPOVALL_2018, y=perc_nonwhite, color=quants))+
+  geom_point(alpha=0.3) +
+  labs(title = "Top 1 percent of Deaths Per Capita", 
+      x = "Percent in Poverty", y = "Percent Non-White Residents") + 
+  theme(legend.position = "right") +
+  labs(color='Quantiles', labels = c("Bottom 99%", "Worst 1%"))+
+  scale_color_manual(labels = c("Bottom 90%", "Worst 1%"), values = c("blue", "red"))
+
+```
+
+We see that there again seems to be a correlation between the worst 1% of counties and higher percentages of non-white residents in a county and higher rates of poverty in a county. Therefore, we would like to investigate and address this effect further in our modelling.
+
+
 # Section 2: Regression Analysis 
 ### Generating Our Model
 
