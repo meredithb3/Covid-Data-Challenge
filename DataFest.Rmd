@@ -24,9 +24,9 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Datasets and Descriptions
-MATT PUT IN DATA INFO HERE (when corona cases stopped tracking, what is pov dataset)
-
-For demographic data, download file called stco-mr2010-1.csv from this url: https://www2.census.gov/programs-surveys/popest/datasets/2010/modified-race-data-2010/.
+For COVID data, download the file called us-states.csv from this url:
+https://github.com/nytimes/covid-19-data/blob/master/us-states.csv
+For demographic data, download files called stco-mr2010-1.csv and stco-mr2010_mt_wy.csv from this url: https://www2.census.gov/programs-surveys/popest/datasets/2010/modified-race-data-2010/.
 The data dictionary is located at https://www2.census.gov/programs-surveys/popest/technical-documentation/file-layouts/2000-2010/mr2010.pdf.
 
 ```{r load-data, cache = TRUE}
