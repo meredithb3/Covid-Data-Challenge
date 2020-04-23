@@ -376,9 +376,16 @@ ui <- dashboardPage(skin = "purple",
             #conclusion tab contents
             tabItem(tabName = "conclusion",
                     fluidRow(
-                        box(title = "box1conclusion", status = "primary", solidHeader = TRUE,
-                           
-                        )
+                        box(title = "General Commentary", status = "primary", solidHeader = TRUE,
+                            "The goal of this analysis was to explore the question:", br(),
+                            '`How does the COVID-19 pandemic disproportionately affect communities of color and/or poor Americans?`', br(), br(),
+                            'The United States is not unique in facing the challenges caused by the COVID-19 pandemic, but it is one of the few countries globally that lacks a national healthcare system and responded relatively slowly to the outbreak of the disease. As such, this was anticipated to lead to an exacerbation of the wealth divide in the United States, with the wealthy able to shelter in place with protective equipment, while poor Americans are forced to continue working in essential services to make ends meet.', br(), br(),
+                            'Through taking a concentrated look at the difference in counties across America, this analysis examined the ways in which demographic, economic, and disease-related predictors can be used to predict a good index of a pandemic-related disparity: deaths per capita."'
+                        ),
+                        box(title = "Discussion of Results", status = "warning", solidHeader = TRUE,
+                            'From the output of our final model and by evaluating the coefficients of the predictors using the associated p-values, we are able to evaluate the variables and interactions that are most significant in predicting deaths per capita:',
+                            htmlOutput("finalModel2"))
+                        
                     )
             )
             
@@ -656,6 +663,15 @@ server <- function(input, output) {
         data %>%
             mutate(county = county.x) %>%
             select(county, state, fips, perc_black, perc_white, perc_hispanic, perc_asian, perc_other)
+    })
+    output$finalModel2 <- renderText({
+        final <- lm(logDeathsPC ~ logCases + Rural.urban_Continuum_Code_2013 + 
+                        PCTPOVALL_2018 + log_pop_2015 + perc_white + perc_black, data = county_deaths)
+        
+        
+        tidy(final, format = "markdown", exponentiate = TRUE) %>%
+            kable("html",digits = 7) %>%
+            kable_styling()
     })
 }
 
