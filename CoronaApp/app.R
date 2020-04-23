@@ -134,6 +134,31 @@ county_deaths <- county_deaths %>%
 county_deaths$predicted = predict.lm(final)
 county_deaths$resid = residuals(final)
 
+final_output <- augment(final) %>%
+    mutate(obs_num = row_number())
+
+augmented_model <- augment(final)
+
+leverage_threshold <- 2*(5+1)/(nrow(augmented_model))
+
+high_lev <- augmented_model %>%
+    filter(.hat > leverage_threshold)
+
+augmented_model <- augmented_model %>%
+    mutate(obs_num = 1:nrow(augmented_model))
+
+full_interaction <- lm(logDeathsPC ~ logCases + 
+                           Rural.urban_Continuum_Code_2013 + PCTPOVALL_2018 +
+                           log_pop_2015 + perc_white + perc_black + 
+                           logCases*PCTPOVALL_2018 + logCases*perc_white +
+                           logCases*perc_black +
+                           PCTPOVALL_2018*perc_white + PCTPOVALL_2018*perc_black +
+                           PCTPOVALL_2018*log_pop_2015 + log_pop_2015*perc_white + 
+                           log_pop_2015*perc_black,
+                       data = county_deaths)
+interaction_model <- step(full_interaction, direction = "backward", trace = FALSE)
+
+
 
 # Define UI for application that draws a histogram
 ui <- dashboardPage(skin = "purple",
@@ -273,7 +298,37 @@ ui <- dashboardPage(skin = "purple",
             
             tabItem(tabName = "analysis",
                     fluidRow(
-                        box(title = "analysis1")
+                        box(title = "Model Diagnostics", status = "warning", solidHeader = TRUE, width = 1000,
+                            "In this part we will analyze diagnostics such as multicollinearity and possible influential points in our data.", br(), br(),
+                            
+                            box(title = "Variance Inflation Factors", width = 1000, status = "success",
+                                verbatimTextOutput("multicol"),
+                            "We do not see any issue with multicollinearity in our model given that all of the 
+                            variance inflation factors are below the general threshold of 10."),
+                            
+                            box(title = "Influential Points", width = 1000, status = "success",
+                                plotOutput("highLevPlot"),
+                                "We see many points above the leverage threshold of 2 times the average leverage
+                                so we shall analyze the cooks distance of the points to make sure none are truly
+                                influential.",
+                                tableOutput("cooksD"),
+                                "After filtering the high leverage values for those with a Cooks Distance of greater
+                                than 1, we do not see any values left in our data table and thus do not have any truly influential points in 
+                                our data."
+                                )
+                            
+                            ),
+                        
+                        box(title = "Interaction Effects", status = "danger", solidHeader = TRUE, width = 1000,
+                            htmlOutput("intModel"),
+                            "After including all possible interaction effects in a model and then using the same method
+                            of backward selection with BIC as a criterion, we obtain the above model and see that there 
+                            appear to be significant interactions with the following: log(cases) with percent in poverty, percent black,
+                            and percent white. percent in poverty with percent black and log(population). log(population) with percent black.", br(), br(),
+                            
+                            #NEED TO PUT INTERACTION EFFECTS ANALYSIS HERE
+                            )
+                        
             
                         )
             ),
@@ -299,7 +354,7 @@ ui <- dashboardPage(skin = "purple",
             tabItem(tabName = "conclusion",
                     fluidRow(
                         box(title = "box1conclusion", status = "primary", solidHeader = TRUE,
-                            
+                           
                         )
                     )
             )
@@ -536,6 +591,28 @@ server <- function(input, output) {
             }
     })
     
+    output$multicol <- renderPrint({
+        vif(final)
+    })
+    
+    output$highLevPlot <- renderPlot({
+        ggplot(data = augmented_model, aes(x = obs_num,y = .hat)) + 
+            geom_point(alpha = 0.7) + 
+            geom_hline(yintercept = leverage_threshold,color = "red")+
+            labs(x = "Observation Number",y = "Leverage",title = "Leverage") +
+            geom_text(aes(label=ifelse(.hat > leverage_threshold, as.character(obs_num), "")), nudge_x = 4)
+    })
+    
+    output$cooksD <- renderTable({
+        high_lev %>%
+            filter(.cooksd > 1)
+    })
+    
+    output$intModel <- renderText({
+        tidy(interaction_model, format = "markdown") %>%
+        kable("html",digits = 4) %>%
+            kable_styling()
+    })
 }
 
 # Run the application 
